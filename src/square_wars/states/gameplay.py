@@ -5,6 +5,8 @@ from typing import Iterator
 from .. import settings
 from .. import command
 from .. import common
+from .. import animation
+from .. import assets
 
 
 def center_point_collide(sprite1, sprite2):
@@ -12,21 +14,40 @@ def center_point_collide(sprite1, sprite2):
 
 
 class Player(pygame.sprite.Sprite):
-    SPEED = 8
+    SPEED = 12
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
         self.controller = controller
-        self.image = pygame.Surface((8, 8)).convert()
         self.team = team
         self.rect = pygame.FRect(0, 0, 8, 8)
         self.rect.topleft = pos
         self.moving = [0, 0]
-        self.facing = [0, 0]
+        self.last_moving = [0, 1]
         self.command_queue = queue.Queue()
         self.squares = pygame.sprite.Group()
+        color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
+        self.anim_dict = {
+            (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
+            (0, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
+            (1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"])),
+            (1, 0): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
+            (1, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
+            (0, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
+            (-1, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"]), flip_x=True),
+            (-1, 0): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"]), flip_x=True),
+        }
 
         self.controller.register_sprite(self)
+
+    @property
+    def image(self):
+        facing = self.moving
+        if not pygame.Vector2(self.moving):
+            facing = self.last_moving
+        if not pygame.Vector2(self.moving):
+            self.anim_dict[tuple(facing)].restart()
+        return self.anim_dict[tuple(facing)].image
 
     @property
     def aligned(self):
@@ -48,34 +69,36 @@ class Player(pygame.sprite.Sprite):
                 self.command_queue.put(next_command)
         # Stage 2: evaluate motion commands only when player is aligned with the grid
         # Ensures that the player cannot stop motion or change direction when not aligned
+        last_moving = list(self.moving)
         if self.aligned:
             while self.command_queue.qsize():
                 next_command = self.command_queue.get()
                 match next_command:
                     case command.Command(command_name=command.COMMAND_UP):
                         self.moving[1] -= 1
-                        self.facing[1] = -1
                     case command.Command(command_name=command.COMMAND_STOP_UP):
                         self.moving[1] += 1
 
                     case command.Command(command_name=command.COMMAND_DOWN):
                         self.moving[1] += 1
-                        self.facing[1] = 1
                     case command.Command(command_name=command.COMMAND_STOP_DOWN):
                         self.moving[1] -= 1
 
                     case command.Command(command_name=command.COMMAND_LEFT):
                         self.moving[0] -= 1
-                        self.facing[0] = -1
                     case command.Command(command_name=command.COMMAND_STOP_LEFT):
-                        print("left stop")
                         self.moving[0] += 1
 
                     case command.Command(command_name=command.COMMAND_RIGHT):
                         self.moving[0] += 1
-                        self.facing[0] = 1
                     case command.Command(command_name=command.COMMAND_STOP_RIGHT):
                         self.moving[0] -= 1
+        # state handling for visuals
+        for anim in self.anim_dict.values():
+            anim.update()
+        if self.moving != last_moving and pygame.Vector2(last_moving):
+            self.last_moving = last_moving
+            print(self.last_moving)
         # actual motion
         if pygame.Vector2(self.moving):
             self.velocity = pygame.Vector2(self.moving)
@@ -92,8 +115,8 @@ class Square(pygame.sprite.Sprite):
         pos: tuple[int, int],
         player_group: pygame.sprite.Group,
         blank_group: pygame.sprite.Group,
-        orange_group: pygame.sprite.Group,
-        brown_group: pygame.sprite.Group,
+        team1_group: pygame.sprite.Group,
+        team2_group: pygame.sprite.Group,
     ):
         super().__init__()
         self.rect = pygame.FRect(0, 0, 8, 8)
@@ -101,15 +124,19 @@ class Square(pygame.sprite.Sprite):
         self.player_group = player_group
         self.team_groups = {
             settings.TEAM_NONE: blank_group,
-            settings.TEAM_ORANGE: orange_group,
-            settings.TEAM_BROWN: brown_group,
+            settings.TEAM_1: team1_group,
+            settings.TEAM_2: team2_group,
         }
         self.team = settings.TEAM_NONE
         self.team_group = self.team_groups[self.team]
         self.team_group.add(self)
         self.owner = None
-        self.image = pygame.Surface((8, 8)).convert()
-        self.image.fill(settings.BLANK_COLOR)
+        self.images = dict(
+            zip(
+                (settings.TEAM_ROCK, settings.TEAM_NONE, settings.TEAM_1, settings.TEAM_2),
+                animation.get_spritesheet(assets.images["tileset"]),
+            )
+        )
         self._x = 0
         self._y = 0
 
@@ -128,14 +155,8 @@ class Square(pygame.sprite.Sprite):
             self.team_group = self.team_groups[self.team]
             self.team_group.add(self)
             self.owner.squares.remove(self)
-            # change color
-            if self.team == settings.TEAM_BROWN:
-                color = settings.BROWN_COLOR
-            if self.team == settings.TEAM_ORANGE:
-                color = settings.ORANGE_COLOR
-            if self.team == settings.TEAM_NONE:
-                color = settings.BLANK_COLOR
-            self.image.fill(color)
+        # change color
+        self.image = self.images[self.team]
 
 
 class SquareSpriteGroup(pygame.sprite.Group):
@@ -171,22 +192,22 @@ class Gameplay:
         # handles squares as a graph of neighbouring sprites for BFS
         self.squares = SquareSpriteGroup()
         self.blanks = pygame.sprite.Group()
-        self.oranges = pygame.sprite.Group()
-        self.browns = pygame.sprite.Group()
+        self.team_one_squares = pygame.sprite.Group()
+        self.team_two_squares = pygame.sprite.Group()
         # spawn squares
         for x in range(0, 8):
             for y in range(0, 8):
-                sprite = Square((x * 8, y * 8), self.players, self.blanks, self.oranges, self.browns)
+                sprite = Square((x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares)
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
         # spawn human player
         controller = command.DumbAIController()
-        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_ORANGE)
+        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_1)
         self.sprites.add(player)
         self.players.add(player)
         # spawn bot player
         controller = command.InputController()
-        player = Player(controller, (0, 0), settings.TEAM_BROWN)
+        player = Player(controller, (0, 0), settings.TEAM_2)
         self.sprites.add(player)
         self.players.add(player)
 

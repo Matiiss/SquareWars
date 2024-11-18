@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pygame
 
-ASSETS_DIR = Path("assets")
+ASSETS_DIR = Path("res")
 
 images: dict = {}
 sfx: dict[str, pygame.mixer.Sound] = {}
@@ -34,7 +34,11 @@ def stop_all_sounds():
 def load_assets():
     images.update(
         {
-            # "image": load_image("image"),
+            "Mr1": load_image("Mr1"),
+            "Mr1Back": load_image("Mr1Back"),
+            "Mr2": load_image("Mr2"),
+            "Mr2Back": load_image("Mr2Back"),
+            "tileset": load_image("tileset"),
         }
     )
     sfx.update(
