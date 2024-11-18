@@ -5,31 +5,31 @@ import pygame
 from . import common
 from . import settings
 
-COMMAND_UP = 0
-COMMAND_STOP_UP = 1
-COMMAND_DOWN = 2
-COMMAND_STOP_DOWN = 3
-COMMAND_LEFT = 4
-COMMAND_STOP_LEFT = 5
-COMMAND_RIGHT = 6
-COMMAND_STOP_RIGHT = 7
-COMMAND_SHOOT = 8
+COMMAND_UP: int = 0
+COMMAND_STOP_UP: int = 1
+COMMAND_DOWN: int = 2
+COMMAND_STOP_DOWN: int = 3
+COMMAND_LEFT: int = 4
+COMMAND_STOP_LEFT: int = 5
+COMMAND_RIGHT: int = 6
+COMMAND_STOP_RIGHT: int = 7
+COMMAND_SHOOT: int = 8
 
 
 class Command:
-    def __init__(self, command_name):
+    def __init__(self, command_name: int):
         self.command_name = command_name
 
 
 class Controller:
     def __init__(self):
         self.sprite = None
-        self.command_queue = queue.Queue()
+        self.command_queue: Queue[int] = queue.Queue()
 
-    def register_sprite(self, sprite):
+    def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         self.sprite = sprite
 
-    def update(self):
+    def update(self) -> None:
         pass
 
 
@@ -49,10 +49,10 @@ class InputController(Controller):
         self.right_key = right_key
         self.shoot_key = shoot_key
 
-    def register_sprite(self, sprite):
+    def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         self.sprite = sprite
 
-    def update(self):
+    def update(self) -> None:
         for event in common.events:
             if event.type == pygame.KEYDOWN:
                 if event.key == self.up_key:
@@ -83,11 +83,11 @@ class DumbAIController(Controller):
         self.pathfind_queue = queue.Queue()
         self.initial_frame = True
 
-    def register_sprite(self, sprite):
+    def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         super().register_sprite(sprite)
         self.team = sprite.team
 
-    def pathfind(self):
+    def pathfind(self) -> bool:
         # find nearest target square using BFS
         x, y = int(self.sprite.rect.x / 8), int(self.sprite.rect.y / 8)
         frontier = queue.Queue()
@@ -132,7 +132,7 @@ class DumbAIController(Controller):
             current = coord
         return True
 
-    def update(self):
+    def update(self) -> None:
         if self.initial_frame:
             self.pathfind()
             self.command_queue.put(Command(self.pathfind_queue.get()))
