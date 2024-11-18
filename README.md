@@ -15,7 +15,9 @@ pip install git+https://github.com/Matiiss/SquareWars
 
 For development use
 ```
-pip install -e git+https://github.com/Matiiss/SquareWars[dev]
+git clone https://github.com/Matiiss/SquareWars
+cd SquareWars
+pip install -e .[dev]
 ```
 
 ### 3. Run the game
