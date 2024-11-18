@@ -34,10 +34,10 @@ def stop_all_sounds():
 def load_assets():
     images.update(
         {
-            "MrOrange": load_image("MrOrange"),
-            "MrOrangeBack": load_image("MrOrangeBack"),
-            "MrBrown": load_image("MrBrown"),
-            "MrBrownBack": load_image("MrBrownBack"),
+            "Mr1": load_image("Mr1"),
+            "Mr1Back": load_image("Mr1Back"),
+            "Mr2": load_image("Mr2"),
+            "Mr2Back": load_image("Mr2Back"),
         }
     )
     sfx.update(

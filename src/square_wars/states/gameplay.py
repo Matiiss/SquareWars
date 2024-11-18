@@ -26,7 +26,7 @@ class Player(pygame.sprite.Sprite):
         self.last_moving = [0, 1]
         self.command_queue = queue.Queue()
         self.squares = pygame.sprite.Group()
-        color = {settings.TEAM_BROWN: "Brown", settings.TEAM_ORANGE: "Orange"}[self.team]
+        color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
             (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
             (0, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
@@ -115,8 +115,8 @@ class Square(pygame.sprite.Sprite):
         pos: tuple[int, int],
         player_group: pygame.sprite.Group,
         blank_group: pygame.sprite.Group,
-        orange_group: pygame.sprite.Group,
-        brown_group: pygame.sprite.Group,
+        team1_group: pygame.sprite.Group,
+        team2_group: pygame.sprite.Group,
     ):
         super().__init__()
         self.rect = pygame.FRect(0, 0, 8, 8)
@@ -124,8 +124,8 @@ class Square(pygame.sprite.Sprite):
         self.player_group = player_group
         self.team_groups = {
             settings.TEAM_NONE: blank_group,
-            settings.TEAM_ORANGE: orange_group,
-            settings.TEAM_BROWN: brown_group,
+            settings.TEAM_1: team1_group,
+            settings.TEAM_2: team2_group,
         }
         self.team = settings.TEAM_NONE
         self.team_group = self.team_groups[self.team]
@@ -152,10 +152,10 @@ class Square(pygame.sprite.Sprite):
             self.team_group.add(self)
             self.owner.squares.remove(self)
             # change color
-            if self.team == settings.TEAM_BROWN:
-                color = settings.BROWN_COLOR
-            if self.team == settings.TEAM_ORANGE:
-                color = settings.ORANGE_COLOR
+            if self.team == settings.TEAM_1:
+                color = settings.TEAM1_COLOR
+            if self.team == settings.TEAM_2:
+                color = settings.TEAM2_COLOR
             if self.team == settings.TEAM_NONE:
                 color = settings.BLANK_COLOR
             self.image.fill(color)
@@ -194,22 +194,22 @@ class Gameplay:
         # handles squares as a graph of neighbouring sprites for BFS
         self.squares = SquareSpriteGroup()
         self.blanks = pygame.sprite.Group()
-        self.oranges = pygame.sprite.Group()
-        self.browns = pygame.sprite.Group()
+        self.team_one_squares = pygame.sprite.Group()
+        self.team_two_squares = pygame.sprite.Group()
         # spawn squares
         for x in range(0, 8):
             for y in range(0, 8):
-                sprite = Square((x * 8, y * 8), self.players, self.blanks, self.oranges, self.browns)
+                sprite = Square((x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares)
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
         # spawn human player
         controller = command.DumbAIController()
-        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_ORANGE)
+        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_1)
         self.sprites.add(player)
         self.players.add(player)
         # spawn bot player
         controller = command.InputController()
-        player = Player(controller, (0, 0), settings.TEAM_BROWN)
+        player = Player(controller, (0, 0), settings.TEAM_2)
         self.sprites.add(player)
         self.players.add(player)
 
