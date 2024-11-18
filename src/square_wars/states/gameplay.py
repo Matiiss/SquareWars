@@ -169,9 +169,15 @@ class Gameplay:
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
         controller = command.DumbAIController()
-        player = Player(controller, (0, 0), settings.TEAM_ORANGE)
+        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_ORANGE)
         self.sprites.add(player)
         self.players.add(player)
+
+        controller = command.InputController()
+        player = Player(controller, (0, 0), settings.TEAM_BROWN)
+        self.sprites.add(player)
+        self.players.add(player)
+
 
     def update(self) -> None:
         self.sprites.update()
