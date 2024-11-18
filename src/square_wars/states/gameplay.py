@@ -178,7 +178,6 @@ class Gameplay:
         self.sprites.add(player)
         self.players.add(player)
 
-
     def update(self) -> None:
         self.sprites.update()
 
