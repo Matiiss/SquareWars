@@ -5,6 +5,8 @@ from typing import Iterator
 from .. import settings
 from .. import command
 from .. import common
+from .. import animation
+from .. import assets
 
 
 def center_point_collide(sprite1, sprite2):
@@ -17,16 +19,35 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
         self.controller = controller
-        self.image = pygame.Surface((8, 8)).convert()
         self.team = team
         self.rect = pygame.FRect(0, 0, 8, 8)
         self.rect.topleft = pos
         self.moving = [0, 0]
-        self.facing = [0, 0]
+        self.last_moving = [0, 1]
         self.command_queue = queue.Queue()
         self.squares = pygame.sprite.Group()
+        color = {settings.TEAM_BROWN: "Brown", settings.TEAM_ORANGE: "Orange"}[self.team]
+        self.anim_dict = {
+            (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
+            (0, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
+            (1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"])),
+            (1, 0): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
+            (1, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
+            (0, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
+            (-1, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"]), flip_x=True),
+            (-1, 0): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"]), flip_x=True),
+        }
 
         self.controller.register_sprite(self)
+
+    @property
+    def image(self):
+        facing = self.moving
+        if not pygame.Vector2(self.moving):
+            facing = self.last_moving
+        if not pygame.Vector2(self.moving):
+            self.anim_dict[tuple(facing)].restart()
+        return self.anim_dict[tuple(facing)].image
 
     @property
     def aligned(self):
@@ -48,34 +69,36 @@ class Player(pygame.sprite.Sprite):
                 self.command_queue.put(next_command)
         # Stage 2: evaluate motion commands only when player is aligned with the grid
         # Ensures that the player cannot stop motion or change direction when not aligned
+        last_moving = list(self.moving)
         if self.aligned:
             while self.command_queue.qsize():
                 next_command = self.command_queue.get()
                 match next_command:
                     case command.Command(command_name=command.COMMAND_UP):
                         self.moving[1] -= 1
-                        self.facing[1] = -1
                     case command.Command(command_name=command.COMMAND_STOP_UP):
                         self.moving[1] += 1
 
                     case command.Command(command_name=command.COMMAND_DOWN):
                         self.moving[1] += 1
-                        self.facing[1] = 1
                     case command.Command(command_name=command.COMMAND_STOP_DOWN):
                         self.moving[1] -= 1
 
                     case command.Command(command_name=command.COMMAND_LEFT):
                         self.moving[0] -= 1
-                        self.facing[0] = -1
                     case command.Command(command_name=command.COMMAND_STOP_LEFT):
-                        print("left stop")
                         self.moving[0] += 1
 
                     case command.Command(command_name=command.COMMAND_RIGHT):
                         self.moving[0] += 1
-                        self.facing[0] = 1
                     case command.Command(command_name=command.COMMAND_STOP_RIGHT):
                         self.moving[0] -= 1
+        # state handling for visuals
+        for anim in self.anim_dict.values():
+            anim.update()
+        if self.moving != last_moving and pygame.Vector2(last_moving):
+            self.last_moving = last_moving
+            print(self.last_moving)
         # actual motion
         if pygame.Vector2(self.moving):
             self.velocity = pygame.Vector2(self.moving)
