@@ -14,7 +14,7 @@ def center_point_collide(sprite1, sprite2):
 
 
 class Player(pygame.sprite.Sprite):
-    SPEED = 8
+    SPEED = 12
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
@@ -131,8 +131,12 @@ class Square(pygame.sprite.Sprite):
         self.team_group = self.team_groups[self.team]
         self.team_group.add(self)
         self.owner = None
-        self.image = pygame.Surface((8, 8)).convert()
-        self.image.fill(settings.BLANK_COLOR)
+        self.images = dict(
+            zip(
+                (settings.TEAM_ROCK, settings.TEAM_NONE, settings.TEAM_1, settings.TEAM_2),
+                animation.get_spritesheet(assets.images["tileset"]),
+            )
+        )
         self._x = 0
         self._y = 0
 
@@ -151,14 +155,8 @@ class Square(pygame.sprite.Sprite):
             self.team_group = self.team_groups[self.team]
             self.team_group.add(self)
             self.owner.squares.remove(self)
-            # change color
-            if self.team == settings.TEAM_1:
-                color = settings.TEAM1_COLOR
-            if self.team == settings.TEAM_2:
-                color = settings.TEAM2_COLOR
-            if self.team == settings.TEAM_NONE:
-                color = settings.BLANK_COLOR
-            self.image.fill(color)
+        # change color
+        self.image = self.images[self.team]
 
 
 class SquareSpriteGroup(pygame.sprite.Group):
