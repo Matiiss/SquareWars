@@ -5,8 +5,10 @@ from .. import settings
 from .. import command
 from .. import common
 
+
 def center_point_collide(sprite1, sprite2):
     return sprite1.rect.collidepoint(sprite2.rect.center)
+
 
 class Player(pygame.sprite.Sprite):
     SPEED = 8
@@ -54,26 +56,26 @@ class Player(pygame.sprite.Sprite):
                         self.facing[1] = -1
                     case command.Command(command_name=command.COMMAND_STOP_UP):
                         self.moving[1] += 1
-                    
+
                     case command.Command(command_name=command.COMMAND_DOWN):
                         self.moving[1] += 1
                         self.facing[1] = 1
                     case command.Command(command_name=command.COMMAND_STOP_DOWN):
                         self.moving[1] -= 1
-                    
+
                     case command.Command(command_name=command.COMMAND_LEFT):
                         self.moving[0] -= 1
                         self.facing[0] = -1
                     case command.Command(command_name=command.COMMAND_STOP_LEFT):
                         print("left stop")
                         self.moving[0] += 1
-                    
+
                     case command.Command(command_name=command.COMMAND_RIGHT):
                         self.moving[0] += 1
                         self.facing[0] = 1
                     case command.Command(command_name=command.COMMAND_STOP_RIGHT):
                         self.moving[0] -= 1
-        # actual motion                
+        # actual motion
         if pygame.Vector2(self.moving):
             self.velocity = pygame.Vector2(self.moving)
             self.velocity.scale_to_length(self.SPEED)
@@ -92,7 +94,7 @@ class Square(pygame.sprite.Sprite):
         self.team_groups = {
             settings.TEAM_NONE: blank_group,
             settings.TEAM_ORANGE: orange_group,
-            settings.TEAM_BROWN: brown_group
+            settings.TEAM_BROWN: brown_group,
         }
         self.team = settings.TEAM_NONE
         self.team_group = self.team_groups[self.team]
@@ -173,7 +175,6 @@ class Gameplay:
 
     def update(self) -> None:
         self.sprites.update()
-
 
     def draw(self) -> None:
         self.sprites.draw(common.screen)

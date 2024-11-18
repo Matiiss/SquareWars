@@ -15,6 +15,7 @@ COMMAND_RIGHT = 6
 COMMAND_STOP_RIGHT = 7
 COMMAND_SHOOT = 8
 
+
 class Command:
     def __init__(self, command_name):
         self.command_name = command_name
@@ -33,7 +34,14 @@ class Controller:
 
 
 class InputController(Controller):
-    def __init__(self, up_key=pygame.K_w, down_key=pygame.K_s, left_key=pygame.K_a, right_key=pygame.K_d, shoot_key=pygame.K_RSHIFT):
+    def __init__(
+        self,
+        up_key=pygame.K_w,
+        down_key=pygame.K_s,
+        left_key=pygame.K_a,
+        right_key=pygame.K_d,
+        shoot_key=pygame.K_RSHIFT,
+    ):
         super().__init__()
         self.up_key = up_key
         self.down_key = down_key
@@ -103,18 +111,13 @@ class DumbAIController(Controller):
         # contruct path of coordinates to that square
         path = []
         current = target_position
-        while current != (x, y): 
+        while current != (x, y):
             path.append(current)
             current = came_from[current]
         path.reverse()
         # convert path of coordinates to commands
         current = (x, y)
-        directions = {
-            (0, -1): COMMAND_UP,
-            (0, 1): COMMAND_DOWN,
-            (-1, 0): COMMAND_LEFT,
-            (1, 0): COMMAND_RIGHT
-        }
+        directions = {(0, -1): COMMAND_UP, (0, 1): COMMAND_DOWN, (-1, 0): COMMAND_LEFT, (1, 0): COMMAND_RIGHT}
         stops = {
             COMMAND_UP: COMMAND_STOP_UP,
             COMMAND_DOWN: COMMAND_STOP_DOWN,
