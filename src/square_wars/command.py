@@ -92,6 +92,7 @@ class DumbAIController(Controller):
         frontier.put((x, y))
         came_from = {(x, y): None}
         grid = common.current_state.squares
+        players = common.current_state.players
         target_position = None
 
         while target_position is None:
@@ -102,8 +103,15 @@ class DumbAIController(Controller):
                 if next not in came_from:
                     frontier.put(next)
                     came_from[next] = current
-                    if grid.get_sprite_by_coordinate(*next).team != self.team:
-                        target_position = next
+                    square = grid.get_sprite_by_coordinate(*next)
+                    if square.team != self.team:
+                        for player in players.sprites():
+                            if player is self:
+                                continue
+                            if square.rect.collidepoint(player.rect.center):
+                                break
+                        else:
+                            target_position = next
         if target_position is None:
             return False
         # contruct path of coordinates to that square
