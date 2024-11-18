@@ -87,7 +87,14 @@ class Player(pygame.sprite.Sprite):
 
 
 class Square(pygame.sprite.Sprite):
-    def __init__(self, pos: tuple[int, int], player_group: pygame.sprite.Group, blank_group: pygame.sprite.Group, orange_group: pygame.sprite.Group, brown_group: pygame.sprite.Group):
+    def __init__(
+        self,
+        pos: tuple[int, int],
+        player_group: pygame.sprite.Group,
+        blank_group: pygame.sprite.Group,
+        orange_group: pygame.sprite.Group,
+        brown_group: pygame.sprite.Group,
+    ):
         super().__init__()
         self.rect = pygame.FRect(0, 0, 8, 8)
         self.rect.topleft = pos
