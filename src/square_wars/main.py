@@ -38,7 +38,7 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                common.current_state = states.MainMenu()
+                common.current_state = states.Gameplay()
 
     common.current_state.update()
     common.current_state.draw()
