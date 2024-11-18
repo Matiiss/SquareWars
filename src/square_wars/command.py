@@ -1,9 +1,7 @@
 import queue
-import collections
 import pygame
 
 from . import common
-from . import settings
 
 COMMAND_UP: int = 0
 COMMAND_STOP_UP: int = 1
@@ -24,7 +22,7 @@ class Command:
 class Controller:
     def __init__(self):
         self.sprite = None
-        self.command_queue: Queue[int] = queue.Queue()
+        self.command_queue: queue.Queue[Command] = queue.Queue()
 
     def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         self.sprite = sprite
@@ -124,7 +122,6 @@ class DumbAIController(Controller):
             COMMAND_LEFT: COMMAND_STOP_LEFT,
             COMMAND_RIGHT: COMMAND_STOP_RIGHT,
         }
-        print((x, y), path)
         for coord in path:
             direction = directions[coord[0] - current[0], coord[1] - current[1]]
             self.pathfind_queue.put(direction)
