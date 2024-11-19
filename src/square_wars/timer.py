@@ -2,6 +2,7 @@ import pygame
 
 from . import common
 
+
 class Timer:
     def __init__(self, amount: float):
         self.time_left: float = amount

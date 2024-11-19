@@ -139,7 +139,7 @@ class Square(pygame.sprite.Sprite):
             )
         )
         self.occupant = None
-        self.teamchange_timer = timer.Timer(.3)
+        self.teamchange_timer = timer.Timer(0.3)
         self._x = 0
         self._y = 0
 
@@ -161,8 +161,8 @@ class Square(pygame.sprite.Sprite):
         else:
             for sprite in pygame.sprite.spritecollide(self, self.player_group, False, center_point_collide):
                 if sprite is not self.occupant:
-                        self.occupant = sprite
-                        self.teamchange_timer.restart()
+                    self.occupant = sprite
+                    self.teamchange_timer.restart()
         if changed:
             # update team groups to reflect new ownership
             self.team_group.remove(self)
