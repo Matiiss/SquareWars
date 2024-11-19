@@ -231,11 +231,7 @@ class Speedup(pygame.sprite.Sprite):
         }
         squares = common.current_state.squares
         for position, (direction, anim) in anim_dict.items():
-            if squares.has_at_position(*position) and squares.get_sprite_by_coordinate(*position).team in {
-                settings.TEAM_1,
-                settings.TEAM_2,
-                settings.TEAM_NONE,
-            }:
+            if common.current_state.squares.is_clear_position(*position):
                 self.anim = anim
                 self.direction = direction
                 break
@@ -382,6 +378,9 @@ class SquareSpriteGroup(pygame.sprite.Group):
     def has_at_position(self, x, y):
         return (x, y) in self.grid
 
+    def is_clear_position(self, x, y):
+        return self.has_at_position(x, y) and self.get_sprite_by_coordinate(x, y).team in {settings.TEAM_1, settings.TEAM_2, settings.TEAM_3}
+
 
 class Gameplay:
     POWERUPS = (Speedup, ShotGun)
@@ -446,11 +445,7 @@ class Gameplay:
                 self.powerup_timer.restart()
                 while True:
                     spot = (random.randint(0, 7), random.randint(0, 7))
-                    if self.squares.has_at_position(*spot) and self.squares.get_sprite_by_coordinate(*spot).team in {
-                        settings.TEAM_1,
-                        settings.TEAM_2,
-                        settings.TEAM_NONE,
-                    }:
+                    if self.squares.is_clear_position(*spot):
                         break
                 self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
 
