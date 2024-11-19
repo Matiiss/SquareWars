@@ -1,4 +1,5 @@
 import queue
+import random
 import pygame
 from typing import Iterator
 
@@ -77,29 +78,40 @@ class Player(pygame.sprite.Sprite):
                 match next_command:
                     case command.Command(command_name=command.COMMAND_UP):
                         self.moving[1] -= 1
-                    case command.Command(command_name=command.COMMAND_STOP_UP):
+                    case command.Command(command_name=command.COMMAND_STOP_UP) if self.moving[1] < 0:
                         self.moving[1] += 1
 
                     case command.Command(command_name=command.COMMAND_DOWN):
                         self.moving[1] += 1
-                    case command.Command(command_name=command.COMMAND_STOP_DOWN):
+                    case command.Command(command_name=command.COMMAND_STOP_DOWN) if self.moving[1] > 0:
                         self.moving[1] -= 1
 
                     case command.Command(command_name=command.COMMAND_LEFT):
                         self.moving[0] -= 1
-                    case command.Command(command_name=command.COMMAND_STOP_LEFT):
+                    case command.Command(command_name=command.COMMAND_STOP_LEFT) if self.moving[0] < 0:
                         self.moving[0] += 1
 
                     case command.Command(command_name=command.COMMAND_RIGHT):
                         self.moving[0] += 1
-                    case command.Command(command_name=command.COMMAND_STOP_RIGHT):
+                    case command.Command(command_name=command.COMMAND_STOP_RIGHT) if self.moving[0] > 0:
                         self.moving[0] -= 1
+            
+            # prevent motion that runs into something bad
+            x, y = int(self.rect.x / 8), int(self.rect.y / 8)
+            neighbors = list(common.current_state.squares.get_neighbors((x, y), True))
+            if (x + self.moving[0], y + self.moving[1]) not in neighbors:
+                if (x + self.moving[0], y) not in neighbors:
+                    self.moving[0] = 0
+                if (x, y + self.moving[1]) not in neighbors:
+                    self.moving[1] = 0
+                if (x + self.moving[0], y + self.moving[1]) not in neighbors:
+                    self.moving = [0, 0]            
+                    
         # state handling for visuals
         for anim in self.anim_dict.values():
             anim.update()
         if self.moving != last_moving and pygame.Vector2(last_moving):
             self.last_moving = last_moving
-            print(self.last_moving)
         # actual motion
         if pygame.Vector2(self.moving):
             self.velocity = pygame.Vector2(self.moving)
@@ -118,6 +130,7 @@ class Square(pygame.sprite.Sprite):
         blank_group: pygame.sprite.Group,
         team1_group: pygame.sprite.Group,
         team2_group: pygame.sprite.Group,
+        start_team: settings.TEAM_NONE,
     ):
         super().__init__()
         self.rect = pygame.FRect(0, 0, 8, 8)
@@ -128,13 +141,15 @@ class Square(pygame.sprite.Sprite):
             settings.TEAM_1: team1_group,
             settings.TEAM_2: team2_group,
         }
-        self.team = settings.TEAM_NONE
-        self.team_group = self.team_groups[self.team]
-        self.team_group.add(self)
+        self.team = start_team
+        self.team_group = None
+        if self.team in self.team_groups.keys():
+            self.team_group = self.team_groups[self.team]
+            self.team_group.add(self)
         self.owner = None
         self.images = dict(
             zip(
-                (settings.TEAM_ROCK, settings.TEAM_NONE, settings.TEAM_1, settings.TEAM_2),
+                (settings.TEAM_ROCK, settings.TEAM_NONE, settings.TEAM_1, settings.TEAM_2, settings.TEAM_2_SPAWN, settings.TEAM_1_SPAWN),
                 animation.get_spritesheet(assets.images["tileset"]),
             )
         )
@@ -147,28 +162,27 @@ class Square(pygame.sprite.Sprite):
         self.teamchange_timer.update()
         # check if I collide with any players and change color to match
         changed = False
-        if self.occupant is not None:
-            print("occupied")
-            if not self.rect.collidepoint(self.occupant.rect.center):
-                print("occupant lost")
-                self.occupant = None
-                self.teamchange_timer.restart()
-            elif not self.teamchange_timer.time_left and self.owner is not self.occupant:
-                self.team = self.occupant.team
-                self.owner = self.occupant
-                self.owner.squares.add(self)
-                changed = True
-        else:
-            for sprite in pygame.sprite.spritecollide(self, self.player_group, False, center_point_collide):
-                if sprite is not self.occupant:
-                    self.occupant = sprite
+        if self.team not in {settings.TEAM_ROCK, settings.TEAM_1_SPAWN, settings.TEAM_2_SPAWN}:
+            if self.occupant is not None:
+                if not self.rect.collidepoint(self.occupant.rect.center):
+                    self.occupant = None
                     self.teamchange_timer.restart()
-        if changed:
-            # update team groups to reflect new ownership
-            self.team_group.remove(self)
-            self.team_group = self.team_groups[self.team]
-            self.team_group.add(self)
-            self.owner.squares.remove(self)
+                elif not self.teamchange_timer.time_left and self.owner is not self.occupant:
+                    self.team = self.occupant.team
+                    self.owner = self.occupant
+                    self.owner.squares.add(self)
+                    changed = True
+            else:
+                for sprite in pygame.sprite.spritecollide(self, self.player_group, False, center_point_collide):
+                    if sprite is not self.occupant:
+                        self.occupant = sprite
+                        self.teamchange_timer.restart()
+            if changed:
+                # update team groups to reflect new ownership
+                self.team_group.remove(self)
+                self.team_group = self.team_groups[self.team]
+                self.team_group.add(self)
+                self.owner.squares.remove(self)
         # change color
         self.image = self.images[self.team]
 
@@ -179,19 +193,24 @@ class SquareSpriteGroup(pygame.sprite.Group):
         self.grid = {}
 
     def add_to_grid(self, sprite: Square, x: int, y: int) -> None:
-        self.grid[(x, y)] = sprite
-        sprite._x = x
-        sprite._y = y
+        if sprite.team != settings.TEAM_ROCK:
+            self.grid[(x, y)] = sprite
+            sprite._x = x
+            sprite._y = y
         self.add(sprite)
 
-    def get_neighbors(self, sprite: Square) -> Iterator[tuple[int, int]]:
+    def get_neighbors(self, sprite: Square, eight=False) -> Iterator[tuple[int, int]]:
+        if eight:
+            distances = {1, 2}
+        else:
+            distances = {1}
         if isinstance(sprite, tuple):
             x, y = sprite
         else:
             x, y = sprite._x, sprite._y
         for nx in range(x - 1, x + 2):
             for ny in range(y - 1, y + 2):
-                if abs(nx - x) + abs(ny - y) == 1 and (nx, ny) in self.grid.keys():
+                if abs(nx - x) + abs(ny - y) in distances and (nx, ny) in self.grid.keys():
                     yield nx, ny
 
     def get_sprite_by_coordinate(self, x: int, y: int) -> Square:
@@ -211,10 +230,26 @@ class Gameplay:
         self.blanks = pygame.sprite.Group()
         self.team_one_squares = pygame.sprite.Group()
         self.team_two_squares = pygame.sprite.Group()
-        # spawn squares
+        # decide on rock placement
+        rocks = set()
+        no_rock_spots = {(0, 0), (7, 7)}
+        for _ in range(6):
+            nx, ny = random.randint(0, 7), random.randint(0, 7)
+            if (nx, ny) in no_rock_spots:
+                continue
+            rocks.add((nx, ny))
+            no_rock_spots.add((nx, ny))
+        # spawn grid
         for x in range(0, 8):
             for y in range(0, 8):
-                sprite = Square((x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares)
+                team = settings.TEAM_NONE
+                if (x, y) == (0, 0):
+                    team = settings.TEAM_1_SPAWN
+                if (x, y) == (7, 7):
+                    team = settings.TEAM_2_SPAWN
+                if (x, y) in rocks:
+                    team = settings.TEAM_ROCK
+                sprite = Square((x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares, team)
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
         # spawn bot player
