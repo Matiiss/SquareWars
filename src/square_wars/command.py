@@ -28,6 +28,9 @@ class Controller:
     def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         self.sprite = sprite
 
+    def on_motion_input(self) -> None:
+        pass
+
     def update(self) -> None:
         pass
 
@@ -50,6 +53,19 @@ class InputController(Controller):
 
     def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         self.sprite = sprite
+
+    def on_motion_input(self) -> None:
+        """
+        keys = pygame.key.get_pressed()
+        if keys[self.up_key]:
+            self.command_queue.put(Command(COMMAND_UP))
+        if keys[self.down_key]:
+            self.command_queue.put(Command(COMMAND_DOWN))
+        if keys[self.left_key]:
+            self.command_queue.put(Command(COMMAND_LEFT))
+        if keys[self.right_key]:
+            self.command_queue.put(Command(COMMAND_RIGHT))
+        """
 
     def update(self) -> None:
         for event in common.events:
@@ -85,6 +101,11 @@ class DumbAIController(Controller):
     def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         super().register_sprite(sprite)
         self.target_teams.remove(self.sprite.team)
+
+    def on_motion_input(self):
+        # Too Good
+        # self.pathfind_queue = queue.Queue()
+        pass
 
     def pathfind(self) -> bool:
         # find nearest target square using BFS
@@ -143,7 +164,8 @@ class DumbAIController(Controller):
             self.sprite.aligned
             and common.current_state.squares.get_sprite_by_coordinate(
                 int(self.sprite.rect.x / 8), int(self.sprite.rect.y / 8)
-            ).team in self.target_teams
+            ).team
+            in self.target_teams
         ):
             return
         if self.initial_frame:

@@ -17,6 +17,7 @@ def center_point_collide(sprite1, sprite2):
 
 class Player(pygame.sprite.Sprite):
     SPEED = 32
+    SPEEDY_SPEED = 64
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
@@ -28,6 +29,10 @@ class Player(pygame.sprite.Sprite):
         self.last_moving = [0, 1]
         self.command_queue = queue.Queue()
         self.squares = pygame.sprite.Group()
+        self.speedup_timer = timer.Timer(1)
+        self.speedup_timer.end()
+        self.blink_timer = timer.Timer(0.1)
+        self.blink_on = False
         color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
             (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
@@ -42,8 +47,12 @@ class Player(pygame.sprite.Sprite):
 
         self.controller.register_sprite(self)
 
+        self.blank_image = pygame.Surface((0, 0))
+
     @property
     def image(self):
+        if self.speedup_timer.time_left and self.blink_on:
+            return self.blank_image
         facing = self.moving
         if not pygame.Vector2(self.moving):
             facing = self.last_moving
@@ -58,6 +67,26 @@ class Player(pygame.sprite.Sprite):
     @property
     def half_aligned(self):
         return (int(self.rect.x) % 8, int(self.rect.y) % 8) in {(0, 4), (4, 0), (4, 4)}
+
+    def speedup(self, direction):
+        self.speedup_timer.restart()
+        starts = {
+            (0, -1): command.COMMAND_UP,
+            (0, 1): command.COMMAND_DOWN,
+            (-1, 0): command.COMMAND_LEFT,
+            (1, 0): command.COMMAND_RIGHT,
+        }
+        stops = {
+            (0, -1): command.COMMAND_STOP_UP,
+            (0, 1): command.COMMAND_STOP_DOWN,
+            (-1, 0): command.COMMAND_STOP_LEFT,
+            (1, 0): command.COMMAND_STOP_RIGHT,
+        }
+        stops.pop(direction)
+        stops[direction] = starts[direction]
+        for value in stops.values():
+            self.command_queue.put(command.Command(value))
+        self.controller.on_motion_input()
 
     def update(self) -> None:
         # Do command reading in 2 stages
@@ -95,7 +124,7 @@ class Player(pygame.sprite.Sprite):
                         self.moving[0] += 1
                     case command.Command(command_name=command.COMMAND_STOP_RIGHT) if self.moving[0] > 0:
                         self.moving[0] -= 1
-            
+
             # prevent motion that runs into something bad
             x, y = int(self.rect.x / 8), int(self.rect.y / 8)
             neighbors = list(common.current_state.squares.get_neighbors((x, y), True))
@@ -105,8 +134,12 @@ class Player(pygame.sprite.Sprite):
                 if (x, y + self.moving[1]) not in neighbors:
                     self.moving[1] = 0
                 if (x + self.moving[0], y + self.moving[1]) not in neighbors:
-                    self.moving = [0, 0]            
-                    
+                    self.moving = [0, 0]
+                self.controller.on_motion_input()
+        speed = self.SPEED
+        self.speedup_timer.update()
+        if self.speedup_timer.time_left:
+            speed = self.SPEEDY_SPEED
         # state handling for visuals
         for anim in self.anim_dict.values():
             anim.update()
@@ -115,11 +148,55 @@ class Player(pygame.sprite.Sprite):
         # actual motion
         if pygame.Vector2(self.moving):
             self.velocity = pygame.Vector2(self.moving)
-            self.velocity.scale_to_length(self.SPEED)
+            self.velocity.scale_to_length(speed)
         else:
             self.velocity = pygame.Vector2()
         self.rect.center += self.velocity * common.dt
         self.rect.clamp_ip((0, 0, 64, 64))
+        self.blink_timer.update()
+        if not self.blink_timer.time_left:
+            self.blink_timer.restart()
+            self.blink_on = not self.blink_on
+
+
+class Speedup(pygame.sprite.Sprite):
+    def __init__(self, pos: tuple[int, int]):
+        super().__init__()
+        self.rect = pygame.FRect(pos, (8, 8))
+        x, y = int(pos[0] / 8), int(pos[1] / 8)
+        anim_dict = {
+            (x, y - 1): ((0, -1), animation.Animation(animation.get_spritesheet(assets.images["speedup"])[2:])),
+            (x, y + 1): (
+                (0, 1),
+                animation.Animation(animation.get_spritesheet(assets.images["speedup"])[2:], flip_y=True),
+            ),
+            (x - 1, y): (
+                (-1, 0),
+                animation.Animation(animation.get_spritesheet(assets.images["speedup"])[:2], flip_x=True),
+            ),
+            (x + 1, y): ((0, 1), animation.Animation(animation.get_spritesheet(assets.images["speedup"])[:2])),
+        }
+        squares = common.current_state.squares
+        for position, (direction, anim) in anim_dict.items():
+            if squares.has_at_position(*position) and squares.get_sprite_by_coordinate(*position).team in {
+                settings.TEAM_1,
+                settings.TEAM_2,
+                settings.TEAM_NONE,
+            }:
+                self.anim = anim
+                self.direction = direction
+                break
+        else:
+            self.direction, self.anim = tuple(anim_dict.values())[0]
+        self.image = self.anim.image
+
+    def update(self):
+        self.anim.update()
+        self.image = self.anim.image
+        for player in common.current_state.players:
+            if self.rect.collidepoint(player.rect.center) and player.aligned:
+                player.speedup(self.direction)
+                self.kill()
 
 
 class Square(pygame.sprite.Sprite):
@@ -149,7 +226,14 @@ class Square(pygame.sprite.Sprite):
         self.owner = None
         self.images = dict(
             zip(
-                (settings.TEAM_ROCK, settings.TEAM_NONE, settings.TEAM_1, settings.TEAM_2, settings.TEAM_2_SPAWN, settings.TEAM_1_SPAWN),
+                (
+                    settings.TEAM_ROCK,
+                    settings.TEAM_NONE,
+                    settings.TEAM_1,
+                    settings.TEAM_2,
+                    settings.TEAM_2_SPAWN,
+                    settings.TEAM_1_SPAWN,
+                ),
                 animation.get_spritesheet(assets.images["tileset"]),
             )
         )
@@ -177,6 +261,8 @@ class Square(pygame.sprite.Sprite):
                     if sprite is not self.occupant:
                         self.occupant = sprite
                         self.teamchange_timer.restart()
+                        if self.occupant.speedup_timer.time_left:
+                            self.teamchange_timer.end()
             if changed:
                 # update team groups to reflect new ownership
                 self.team_group.remove(self)
@@ -216,11 +302,17 @@ class SquareSpriteGroup(pygame.sprite.Group):
     def get_sprite_by_coordinate(self, x: int, y: int) -> Square:
         return self.grid[(x, y)]
 
+    def has_at_position(self, x, y):
+        return (x, y) in self.grid
+
 
 class Gameplay:
+    POWERUPS = (Speedup,)
+
     def __init__(self):
         # timer
         self.timer = timer.Timer(64)
+        self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
         # sprite groups
         self.sprites = pygame.sprite.Group()
@@ -249,7 +341,9 @@ class Gameplay:
                     team = settings.TEAM_2_SPAWN
                 if (x, y) in rocks:
                     team = settings.TEAM_ROCK
-                sprite = Square((x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares, team)
+                sprite = Square(
+                    (x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares, team
+                )
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
         # spawn bot player
@@ -262,12 +356,27 @@ class Gameplay:
         player = Player(controller, (0, 0), settings.TEAM_2)
         self.sprites.add(player)
         self.players.add(player)
+        # play ost
+        pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
+        pygame.mixer.music.play()
 
     def update(self) -> None:
         self.sprites.update()
         self.caption_string = f"TIME: {int(self.timer.update()):02d}"
+        self.powerup_timer.update()
+        if not self.powerup_timer.time_left:
+            self.powerup_timer.restart()
+            while True:
+                spot = (random.randint(0, 7), random.randint(0, 7))
+                if self.squares.has_at_position(*spot) and self.squares.get_sprite_by_coordinate(*spot).team in {
+                    settings.TEAM_1,
+                    settings.TEAM_2,
+                    settings.TEAM_NONE,
+                }:
+                    break
+            self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
         if not self.timer.time_left:
-            print("STUFF HAPPENS HERE")
+            pass
 
     def draw(self) -> None:
         self.sprites.draw(common.screen)
