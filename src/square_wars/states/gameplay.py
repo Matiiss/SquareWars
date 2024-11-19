@@ -356,6 +356,9 @@ class Gameplay:
         player = Player(controller, (0, 0), settings.TEAM_2)
         self.sprites.add(player)
         self.players.add(player)
+        # play ost
+        pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
+        pygame.mixer.music.play()
 
     def update(self) -> None:
         self.sprites.update()
