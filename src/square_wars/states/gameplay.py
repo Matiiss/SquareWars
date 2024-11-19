@@ -89,7 +89,7 @@ class Player(pygame.sprite.Sprite):
         # Stage 2: evaluate motion commands only when player is aligned with the grid
         # Ensures that the player cannot stop motion or change direction when not aligned
         last_moving = list(self.moving)
-        if self.aligned and self.speedup_timer.time_left < .5:
+        if self.aligned and self.speedup_timer.time_left < 0.5:
             while self.command_queue.qsize():
                 next_command = self.command_queue.get()
                 match next_command:
