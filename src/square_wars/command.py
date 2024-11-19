@@ -138,6 +138,8 @@ class DumbAIController(Controller):
         return True
 
     def update(self) -> None:
+        if self.sprite.aligned and common.current_state.squares.get_sprite_by_coordinate(int(self.sprite.rect.x / 8), int(self.sprite.rect.y / 8)).team != self.sprite.team:
+            return
         if self.initial_frame:
             self.pathfind()
             self.command_queue.put(Command(self.pathfind_queue.get()))

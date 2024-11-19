@@ -138,18 +138,31 @@ class Square(pygame.sprite.Sprite):
                 animation.get_spritesheet(assets.images["tileset"]),
             )
         )
+        self.occupant = None
+        self.teamchange_timer = timer.Timer(.3)
         self._x = 0
         self._y = 0
 
     def update(self) -> None:
+        self.teamchange_timer.update()
         # check if I collide with any players and change color to match
         changed = False
-        for sprite in pygame.sprite.spritecollide(self, self.player_group, False, center_point_collide):
-            if sprite is not self.owner:
-                self.team = sprite.team
-                self.owner = sprite
+        if self.occupant is not None:
+            print("occupied")
+            if not self.rect.collidepoint(self.occupant.rect.center):
+                print("occupant lost")
+                self.occupant = None
+                self.teamchange_timer.restart()
+            elif not self.teamchange_timer.time_left and self.owner is not self.occupant:
+                self.team = self.occupant.team
+                self.owner = self.occupant
                 self.owner.squares.add(self)
                 changed = True
+        else:
+            for sprite in pygame.sprite.spritecollide(self, self.player_group, False, center_point_collide):
+                if sprite is not self.occupant:
+                        self.occupant = sprite
+                        self.teamchange_timer.restart()
         if changed:
             # update team groups to reflect new ownership
             self.team_group.remove(self)
@@ -204,12 +217,12 @@ class Gameplay:
                 sprite = Square((x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares)
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
-        # spawn human player
+        # spawn bot player
         controller = command.DumbAIController()
         player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_1)
         self.sprites.add(player)
         self.players.add(player)
-        # spawn bot player
+        # spawn human player
         controller = command.InputController()
         player = Player(controller, (0, 0), settings.TEAM_2)
         self.sprites.add(player)
