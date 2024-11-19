@@ -70,23 +70,7 @@ class Player(pygame.sprite.Sprite):
 
     def speedup(self, direction):
         self.speedup_timer.restart()
-        starts = {
-            (0, -1): command.COMMAND_UP,
-            (0, 1): command.COMMAND_DOWN,
-            (-1, 0): command.COMMAND_LEFT,
-            (1, 0): command.COMMAND_RIGHT,
-        }
-        stops = {
-            (0, -1): command.COMMAND_STOP_UP,
-            (0, 1): command.COMMAND_STOP_DOWN,
-            (-1, 0): command.COMMAND_STOP_LEFT,
-            (1, 0): command.COMMAND_STOP_RIGHT,
-        }
-        stops.pop(direction)
-        stops[direction] = starts[direction]
-        for value in stops.values():
-            self.command_queue.put(command.Command(value))
-        self.controller.on_motion_input()
+        self.moving = list(direction)
 
     def update(self) -> None:
         # Do command reading in 2 stages
