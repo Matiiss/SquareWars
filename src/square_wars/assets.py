@@ -4,19 +4,24 @@ import pygame
 
 ASSETS_DIR = Path("res")
 
-images: dict = {}
+images: dict[str, pygame.Surface] = {}
 sfx: dict[str, pygame.mixer.Sound] = {}
 
 
 def image_path(path, extension="png"):
     return ASSETS_DIR / "images" / f"{path}.{extension}"
 
+
 def ost_path(path, extension="wav"):
     return ASSETS_DIR / "ost" / f"{path}.{extension}"
 
 
-def load_image(path):
+def load_image_raw(path) -> pygame.Surface:
     return pygame.image.load(image_path(path))
+
+
+def load_image(path):
+    return load_image_raw(path).convert_alpha()
 
 
 def load_sound(path, extension="wav"):
@@ -43,6 +48,11 @@ def load_assets():
             "Mr2Back": load_image("Mr2Back"),
             "tileset": load_image("tileset"),
             "speedup": load_image("speedup"),
+            "menu_bg": load_image("main_menu_bg"),
+            "selector_arrow": load_image("selector_arrow"),
+            "play_button": load_image("play_button"),
+            "settings_button": load_image("settings_button"),
+            "menu_title": load_image("menu_title"),
         }
     )
     sfx.update(
