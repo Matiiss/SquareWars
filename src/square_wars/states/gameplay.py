@@ -363,3 +363,34 @@ class Gameplay:
 
     def draw(self) -> None:
         self.sprites.draw(common.screen)
+
+    def transition_init(self) -> None:
+        # hax
+        state = common.current_state
+        common.current_state = self
+        self.update()
+        common.current_state = state
+
+        # more hax
+        screen = common.screen
+        common.screen = pygame.Surface(common.screen.size)
+        self.draw()
+        self.____transition_image_original = self.____transition_image = common.screen
+        self.____transition_image_alpha = 0
+        self.____transition_image_width = 0
+        common.screen = screen
+
+    def transition_update(self) -> None:
+        self.____transition_image_alpha += 80 * common.dt
+        self.____transition_image_width += 30 * common.dt
+        self.____transition_image_width = min(self.____transition_image_width, 64)  # nice hardcoded value
+        self.____transition_image = pygame.transform.scale(
+            self.____transition_image_original, (self.____transition_image_width, self.____transition_image_width)
+        )
+        self.____transition_image.set_alpha(self.____transition_image_alpha)
+
+        if self.____transition_image_alpha >= 255 and self.____transition_image_width >= 64:
+            common.current_state = self
+
+    def transition_draw(self, dst: pygame.Surface) -> None:
+        dst.blit(self.____transition_image, self.____transition_image.get_rect(center=pygame.Vector2(dst.size) / 2))
