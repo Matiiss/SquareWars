@@ -39,6 +39,7 @@ def load_assets():
             "Mr2": load_image("Mr2"),
             "Mr2Back": load_image("Mr2Back"),
             "tileset": load_image("tileset"),
+            "speedup": load_image("speedup"),
         }
     )
     sfx.update(

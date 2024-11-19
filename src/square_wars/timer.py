@@ -14,3 +14,6 @@ class Timer:
 
     def restart(self):
         self.time_left = self.max_time
+
+    def end(self):
+        self.time_left = 0
