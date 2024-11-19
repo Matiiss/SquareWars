@@ -33,6 +33,7 @@ class Player(pygame.sprite.Sprite):
         self.speedup_timer.end()
         self.blink_timer = timer.Timer(0.1)
         self.blink_on = False
+        self.align_flag = False
         color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
             (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
@@ -62,7 +63,10 @@ class Player(pygame.sprite.Sprite):
 
     @property
     def aligned(self):
-        return int(self.rect.x) % 8 == 0 and int(self.rect.y) % 8 == 0
+        if int(self.rect.x) % 8 == 0 and int(self.rect.y) % 8 == 0:
+            if self.align_flag:
+                return False
+            return True
 
     @property
     def half_aligned(self):
@@ -85,7 +89,7 @@ class Player(pygame.sprite.Sprite):
         # Stage 2: evaluate motion commands only when player is aligned with the grid
         # Ensures that the player cannot stop motion or change direction when not aligned
         last_moving = list(self.moving)
-        if self.aligned:
+        if self.aligned and self.speedup_timer.time_left < .5:
             while self.command_queue.qsize():
                 next_command = self.command_queue.get()
                 match next_command:
@@ -108,18 +112,8 @@ class Player(pygame.sprite.Sprite):
                         self.moving[0] += 1
                     case command.Command(command_name=command.COMMAND_STOP_RIGHT) if self.moving[0] > 0:
                         self.moving[0] -= 1
-
-            # prevent motion that runs into something bad
-            x, y = int(self.rect.x / 8), int(self.rect.y / 8)
-            neighbors = list(common.current_state.squares.get_neighbors((x, y), True))
-            if (x + self.moving[0], y + self.moving[1]) not in neighbors:
-                if (x + self.moving[0], y) not in neighbors:
-                    self.moving[0] = 0
-                if (x, y + self.moving[1]) not in neighbors:
-                    self.moving[1] = 0
-                if (x + self.moving[0], y + self.moving[1]) not in neighbors:
-                    self.moving = [0, 0]
-                self.controller.on_motion_input()
+        self.moving[0] = pygame.math.clamp(self.moving[0], -1, 1)
+        self.moving[1] = pygame.math.clamp(self.moving[1], -1, 1)
         speed = self.SPEED
         self.speedup_timer.update()
         if self.speedup_timer.time_left:
@@ -135,7 +129,30 @@ class Player(pygame.sprite.Sprite):
             self.velocity.scale_to_length(speed)
         else:
             self.velocity = pygame.Vector2()
-        self.rect.center += self.velocity * common.dt
+        motion = self.velocity * common.dt
+        self.rect.x += motion.x
+        rect = pygame.Rect(self.rect)
+        moved = False
+        for sprite in common.current_state.squares:
+            if sprite.team == settings.TEAM_ROCK and sprite.rect.colliderect(rect):
+                if motion.x >= 0:
+                    self.rect.right = sprite.rect.left
+                    moved = True
+                else:
+                    self.rect.left = sprite.rect.right
+                    moved = True
+        self.rect.y += motion.y
+        rect = pygame.Rect(self.rect)
+        for sprite in common.current_state.squares:
+            if sprite.team == settings.TEAM_ROCK and sprite.rect.colliderect(rect):
+                if motion.y >= 0:
+                    self.rect.bottom = sprite.rect.top
+                    moved = True
+                else:
+                    self.rect.top = sprite.rect.bottom
+                    moved = True
+        if moved:
+            self.controller.on_motion_input()
         self.rect.clamp_ip((0, 0, 64, 64))
         self.blink_timer.update()
         if not self.blink_timer.time_left:
