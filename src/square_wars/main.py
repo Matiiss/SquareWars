@@ -4,6 +4,8 @@ import pygame._sdl2 as pg_sdl2  # noqa
 from . import common, settings, assets, states
 
 pygame.init()
+icon = assets.load_image_raw("icon")
+pygame.display.set_icon(icon)
 common.screen = screen = pygame.display.set_mode(settings.LOGICAL_SIZE, flags=settings.DISPLAY_FLAGS | pygame.HIDDEN)
 common.clock = clock = pygame.Clock()
 
@@ -20,8 +22,8 @@ renderer.draw_color = "#b22222"
 
 assets.load_assets()
 
-common.current_state = states.Gameplay()
-# common.current_state = states.MainMenu()
+# common.current_state = states.Gameplay()
+common.current_state = states.MainMenu()
 
 running = True
 while running:
@@ -38,7 +40,7 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                common.current_state = states.Gameplay()
+                common.current_state = states.MainMenu()
 
     common.current_state.update()
     common.current_state.draw()
