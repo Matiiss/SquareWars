@@ -2,6 +2,7 @@ import queue
 import pygame
 
 from . import common
+from . import settings
 
 COMMAND_UP: int = 0
 COMMAND_STOP_UP: int = 1
@@ -27,6 +28,9 @@ class Controller:
     def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         self.sprite = sprite
 
+    def on_motion_input(self) -> None:
+        pass
+
     def update(self) -> None:
         pass
 
@@ -49,6 +53,19 @@ class InputController(Controller):
 
     def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         self.sprite = sprite
+
+    def on_motion_input(self) -> None:
+        """
+        keys = pygame.key.get_pressed()
+        if keys[self.up_key]:
+            self.command_queue.put(Command(COMMAND_UP))
+        if keys[self.down_key]:
+            self.command_queue.put(Command(COMMAND_DOWN))
+        if keys[self.left_key]:
+            self.command_queue.put(Command(COMMAND_LEFT))
+        if keys[self.right_key]:
+            self.command_queue.put(Command(COMMAND_RIGHT))
+        """
 
     def update(self) -> None:
         for event in common.events:
@@ -77,13 +94,18 @@ class InputController(Controller):
 class DumbAIController(Controller):
     def __init__(self):
         super().__init__()
-        self.team = None
         self.pathfind_queue = queue.Queue()
         self.initial_frame = True
+        self.target_teams = {settings.TEAM_1, settings.TEAM_2, settings.TEAM_NONE}
 
     def register_sprite(self, sprite: pygame.sprite.Sprite) -> None:
         super().register_sprite(sprite)
-        self.team = sprite.team
+        self.target_teams.remove(self.sprite.team)
+
+    def on_motion_input(self):
+        # Too Good
+        # self.pathfind_queue = queue.Queue()
+        pass
 
     def pathfind(self) -> bool:
         # find nearest target square using BFS
@@ -104,7 +126,7 @@ class DumbAIController(Controller):
                     frontier.put(next)
                     came_from[next] = current
                     square = grid.get_sprite_by_coordinate(*next)
-                    if square.team != self.team:
+                    if square.team in self.target_teams:
                         for player in players.sprites():
                             if player is self:
                                 continue
@@ -138,14 +160,23 @@ class DumbAIController(Controller):
         return True
 
     def update(self) -> None:
+        if (
+            self.sprite.aligned
+            and common.current_state.squares.get_sprite_by_coordinate(
+                int(self.sprite.rect.x / 8), int(self.sprite.rect.y / 8)
+            ).team
+            in self.target_teams
+        ):
+            return
         if self.initial_frame:
             self.pathfind()
             self.command_queue.put(Command(self.pathfind_queue.get()))
             self.initial_frame = False
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
-            if self.pathfind_queue.qsize():
-                self.command_queue.put(Command(self.pathfind_queue.get()))
-        if self.pathfind_queue.empty() and self.sprite.aligned:
-            if self.pathfind():
+        if self.sprite.aligned:
+            go = True
+            if not self.pathfind_queue.qsize():
+                go = self.pathfind()
+            if go:
                 self.command_queue.put(Command(self.pathfind_queue.get()))

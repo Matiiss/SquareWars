@@ -11,12 +11,15 @@ sfx: dict[str, pygame.mixer.Sound] = {}
 def image_path(path, extension="png"):
     return ASSETS_DIR / "images" / f"{path}.{extension}"
 
+def ost_path(path, extension="wav"):
+    return ASSETS_DIR / "ost" / f"{path}.{extension}"
+
 
 def load_image(path):
     return pygame.image.load(image_path(path))
 
 
-def load_sound(path, extension="mp3"):
+def load_sound(path, extension="wav"):
     return pygame.mixer.Sound(ASSETS_DIR / "sfx" / f"{path}.{extension}")
 
 
@@ -34,10 +37,12 @@ def stop_all_sounds():
 def load_assets():
     images.update(
         {
-            "MrOrange": load_image("MrOrange"),
-            "MrOrangeBack": load_image("MrOrangeBack"),
-            "MrBrown": load_image("MrBrown"),
-            "MrBrownBack": load_image("MrBrownBack"),
+            "Mr1": load_image("Mr1"),
+            "Mr1Back": load_image("Mr1Back"),
+            "Mr2": load_image("Mr2"),
+            "Mr2Back": load_image("Mr2Back"),
+            "tileset": load_image("tileset"),
+            "speedup": load_image("speedup"),
         }
     )
     sfx.update(

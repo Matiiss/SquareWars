@@ -27,7 +27,7 @@ running = True
 while running:
     dt = clock.tick(settings.FPS) / 1000
     common.dt = dt = pygame.math.clamp(dt, 0.0005, 0.05)
-    pygame.display.set_caption(f"{settings.TITLE} | FPS: {clock.get_fps():.0f}")
+    pygame.display.set_caption(f"{settings.TITLE} | FPS: {clock.get_fps():.0f} | {common.current_state.caption_string}")
 
     screen.fill("black")
 
