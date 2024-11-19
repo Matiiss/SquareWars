@@ -70,23 +70,7 @@ class Player(pygame.sprite.Sprite):
 
     def speedup(self, direction):
         self.speedup_timer.restart()
-        starts = {
-            (0, -1): command.COMMAND_UP,
-            (0, 1): command.COMMAND_DOWN,
-            (-1, 0): command.COMMAND_LEFT,
-            (1, 0): command.COMMAND_RIGHT,
-        }
-        stops = {
-            (0, -1): command.COMMAND_STOP_UP,
-            (0, 1): command.COMMAND_STOP_DOWN,
-            (-1, 0): command.COMMAND_STOP_LEFT,
-            (1, 0): command.COMMAND_STOP_RIGHT,
-        }
-        stops.pop(direction)
-        stops[direction] = starts[direction]
-        for value in stops.values():
-            self.command_queue.put(command.Command(value))
-        self.controller.on_motion_input()
+        self.moving = list(direction)
 
     def update(self) -> None:
         # Do command reading in 2 stages
@@ -361,22 +345,21 @@ class Gameplay:
         pygame.mixer.music.play()
 
     def update(self) -> None:
-        self.sprites.update()
-        self.caption_string = f"TIME: {int(self.timer.update()):02d}"
-        self.powerup_timer.update()
-        if not self.powerup_timer.time_left:
-            self.powerup_timer.restart()
-            while True:
-                spot = (random.randint(0, 7), random.randint(0, 7))
-                if self.squares.has_at_position(*spot) and self.squares.get_sprite_by_coordinate(*spot).team in {
-                    settings.TEAM_1,
-                    settings.TEAM_2,
-                    settings.TEAM_NONE,
-                }:
-                    break
-            self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
-        if not self.timer.time_left:
-            pass
+        if self.timer.time_left:
+            self.sprites.update()
+            self.caption_string = f"TIME: {int(self.timer.update()):02d}"
+            self.powerup_timer.update()
+            if not self.powerup_timer.time_left:
+                self.powerup_timer.restart()
+                while True:
+                    spot = (random.randint(0, 7), random.randint(0, 7))
+                    if self.squares.has_at_position(*spot) and self.squares.get_sprite_by_coordinate(*spot).team in {
+                        settings.TEAM_1,
+                        settings.TEAM_2,
+                        settings.TEAM_NONE,
+                    }:
+                        break
+                self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
 
     def draw(self) -> None:
         self.sprites.draw(common.screen)

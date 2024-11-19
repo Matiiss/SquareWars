@@ -103,9 +103,7 @@ class DumbAIController(Controller):
         self.target_teams.remove(self.sprite.team)
 
     def on_motion_input(self):
-        # Too Good
-        # self.pathfind_queue = queue.Queue()
-        pass
+        self.pathfind_queue = queue.Queue()
 
     def pathfind(self) -> bool:
         # find nearest target square using BFS
@@ -174,7 +172,7 @@ class DumbAIController(Controller):
             self.initial_frame = False
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
-        if self.sprite.aligned:
+        if self.sprite.aligned and not self.sprite.speedup_timer.time_left:
             go = True
             if not self.pathfind_queue.qsize():
                 go = self.pathfind()
