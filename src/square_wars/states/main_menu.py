@@ -1,6 +1,6 @@
 import pygame
 
-from .. import common, assets, ui
+from .. import common, assets, ui, event_types
 
 
 class MainMenu:
@@ -8,9 +8,14 @@ class MainMenu:
 
     def __init__(self):
         self.ui_manager = ui.UIManager()
-        self.ui_manager.add(ui.Button((16, 28), assets.images["play_button"]), initial_selected=True).add(
-            ui.Button((16, 39), assets.images["settings_button"])
-        )
+        self.ui_manager.add(
+            ui.Button(
+                position=(16, 28),
+                image=assets.images["play_button"],
+                callback=lambda: pygame.event.post(pygame.Event(event_types.SWITCH_TO_GAMEPLAY)),
+            ),
+            initial_selected=True,
+        ).add(ui.Button(position=(16, 39), image=assets.images["settings_button"]))
 
     def update(self) -> None:
         self.ui_manager.update()

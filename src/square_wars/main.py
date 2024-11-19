@@ -1,7 +1,7 @@
 import pygame
 import pygame._sdl2 as pg_sdl2  # noqa
 
-from . import common, settings, assets, states
+from . import common, settings, assets, states, event_types
 
 pygame.init()
 icon = assets.load_image_raw("icon")
@@ -41,6 +41,8 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 common.current_state = states.MainMenu()
+        elif event.type == event_types.SWITCH_TO_GAMEPLAY:
+            common.current_state = states.Gameplay()
 
     common.current_state.update()
     common.current_state.draw()
