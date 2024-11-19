@@ -361,22 +361,21 @@ class Gameplay:
         pygame.mixer.music.play()
 
     def update(self) -> None:
-        self.sprites.update()
-        self.caption_string = f"TIME: {int(self.timer.update()):02d}"
-        self.powerup_timer.update()
-        if not self.powerup_timer.time_left:
-            self.powerup_timer.restart()
-            while True:
-                spot = (random.randint(0, 7), random.randint(0, 7))
-                if self.squares.has_at_position(*spot) and self.squares.get_sprite_by_coordinate(*spot).team in {
-                    settings.TEAM_1,
-                    settings.TEAM_2,
-                    settings.TEAM_NONE,
-                }:
-                    break
-            self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
-        if not self.timer.time_left:
-            pass
+        if self.timer.time_left:
+            self.sprites.update()
+            self.caption_string = f"TIME: {int(self.timer.update()):02d}"
+            self.powerup_timer.update()
+            if not self.powerup_timer.time_left:
+                self.powerup_timer.restart()
+                while True:
+                    spot = (random.randint(0, 7), random.randint(0, 7))
+                    if self.squares.has_at_position(*spot) and self.squares.get_sprite_by_coordinate(*spot).team in {
+                        settings.TEAM_1,
+                        settings.TEAM_2,
+                        settings.TEAM_NONE,
+                    }:
+                        break
+                self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
 
     def draw(self) -> None:
         self.sprites.draw(common.screen)
