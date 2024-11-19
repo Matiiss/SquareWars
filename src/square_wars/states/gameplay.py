@@ -7,6 +7,7 @@ from .. import command
 from .. import common
 from .. import animation
 from .. import assets
+from .. import timer
 
 
 def center_point_collide(sprite1, sprite2):
@@ -14,7 +15,7 @@ def center_point_collide(sprite1, sprite2):
 
 
 class Player(pygame.sprite.Sprite):
-    SPEED = 12
+    SPEED = 32
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
@@ -186,6 +187,9 @@ class SquareSpriteGroup(pygame.sprite.Group):
 
 class Gameplay:
     def __init__(self):
+        # timer
+        self.timer = timer.Timer(64)
+        self.caption_string = "TIME: 64"
         # sprite groups
         self.sprites = pygame.sprite.Group()
         self.players = pygame.sprite.Group()
@@ -213,6 +217,9 @@ class Gameplay:
 
     def update(self) -> None:
         self.sprites.update()
+        self.caption_string = f"TIME: {int(self.timer.update()):02d}"
+        if not self.timer.time_left:
+            print("STUFF HAPPENS HERE")
 
     def draw(self) -> None:
         self.sprites.draw(common.screen)
