@@ -53,6 +53,8 @@ def load_assets():
             "play_button": load_image("play_button"),
             "settings_button": load_image("settings_button"),
             "menu_title": load_image("menu_title"),
+            "gun": load_image("gun"),
+            "ghost": load_image("ghost"),
         }
     )
     sfx.update(

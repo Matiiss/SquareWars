@@ -15,9 +15,28 @@ def center_point_collide(sprite1, sprite2):
     return sprite1.rect.collidepoint(sprite2.rect.center)
 
 
+class Bullet(pygame.sprite.Sprite):
+    SPEED = 64
+    def __init__(self, pos: tuple[int, int], direction: pygame.Vector2, owner: pygame.sprite.Sprite):
+        super().__init__()
+        self.image = pygame.Surface((1, 1))
+        self.image.fill("#131313")
+        self.rect = pygame.FRect(pos, (1, 1))
+        self.velocity = direction.normalize() * self.SPEED
+        self.owner = owner
+
+    def update(self):
+        self.rect.center += self.velocity * common.dt
+        for player in common.current_state.players:
+            if player.rect.colliderect(self.rect) and player is not self.owner:
+                player.whack()
+                self.kill()
+
+
 class Player(pygame.sprite.Sprite):
     SPEED = 32
     SPEEDY_SPEED = 64
+    GHOST_SPEED = 32
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
@@ -34,6 +53,10 @@ class Player(pygame.sprite.Sprite):
         self.blink_timer = timer.Timer(0.1)
         self.blink_on = False
         self.align_flag = False
+        self.powerup = None
+        self.spawn_point = self.rect.topleft
+        self.ghost_anim = animation.SingleAnimation(assets.images["ghost"])
+        self.whacked = False
         color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
             (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
@@ -51,7 +74,15 @@ class Player(pygame.sprite.Sprite):
         self.blank_image = pygame.Surface((0, 0))
 
     @property
+    def facing(self):
+        if not pygame.Vector2(self.moving):
+            return self.last_moving
+        return self.moving
+
+    @property
     def image(self):
+        if self.whacked:
+            return self.ghost_anim.image
         if self.speedup_timer.time_left and self.blink_on:
             return self.blank_image
         facing = self.moving
@@ -76,88 +107,109 @@ class Player(pygame.sprite.Sprite):
         self.speedup_timer.restart()
         self.moving = list(direction)
 
+    def set_powerup(self, sprite):
+        if self.powerup is not None:
+            self.powerup.kill()
+        self.powerup = sprite
+
+    def dequip_powerup(self):
+        self.powerup.kill()
+        self.powerup = None
+
+    def whack(self):
+        self.whacked = True
+
     def update(self) -> None:
-        # Do command reading in 2 stages
-        # Stage 1: realtime, cache non-realtime commands
-        self.controller.update()
-        while self.controller.command_queue.qsize():
-            next_command = self.controller.command_queue.get()
-            if next_command.command_name == command.COMMAND_SHOOT:
-                print("pew pew")
+        if not self.whacked:
+            # Do command reading in 2 stages
+            # Stage 1: realtime, cache non-realtime commands
+            self.controller.update()
+            while self.controller.command_queue.qsize():
+                next_command = self.controller.command_queue.get()
+                if next_command.command_name == command.COMMAND_SHOOT:
+                    print("pew pew")
+                    if self.powerup:
+                        self.powerup.use()
+                else:
+                    self.command_queue.put(next_command)
+            # Stage 2: evaluate motion commands only when player is aligned with the grid
+            # Ensures that the player cannot stop motion or change direction when not aligned
+            last_moving = list(self.moving)
+            if self.aligned and self.speedup_timer.time_left < 0.5:
+                while self.command_queue.qsize():
+                    next_command = self.command_queue.get()
+                    match next_command:
+                        case command.Command(command_name=command.COMMAND_UP):
+                            self.moving[1] -= 1
+                        case command.Command(command_name=command.COMMAND_STOP_UP) if self.moving[1] < 0:
+                            self.moving[1] += 1
+
+                        case command.Command(command_name=command.COMMAND_DOWN):
+                            self.moving[1] += 1
+                        case command.Command(command_name=command.COMMAND_STOP_DOWN) if self.moving[1] > 0:
+                            self.moving[1] -= 1
+
+                        case command.Command(command_name=command.COMMAND_LEFT):
+                            self.moving[0] -= 1
+                        case command.Command(command_name=command.COMMAND_STOP_LEFT) if self.moving[0] < 0:
+                            self.moving[0] += 1
+
+                        case command.Command(command_name=command.COMMAND_RIGHT):
+                            self.moving[0] += 1
+                        case command.Command(command_name=command.COMMAND_STOP_RIGHT) if self.moving[0] > 0:
+                            self.moving[0] -= 1
+            self.moving[0] = pygame.math.clamp(self.moving[0], -1, 1)
+            self.moving[1] = pygame.math.clamp(self.moving[1], -1, 1)
+            speed = self.SPEED
+            self.speedup_timer.update()
+            if self.speedup_timer.time_left:
+                speed = self.SPEEDY_SPEED
+            # state handling for visuals
+            for anim in self.anim_dict.values():
+                anim.update()
+            if self.moving != last_moving and pygame.Vector2(last_moving):
+                self.last_moving = last_moving
+            # actual motion
+            if pygame.Vector2(self.moving):
+                self.velocity = pygame.Vector2(self.moving)
+                self.velocity.scale_to_length(speed)
             else:
-                self.command_queue.put(next_command)
-        # Stage 2: evaluate motion commands only when player is aligned with the grid
-        # Ensures that the player cannot stop motion or change direction when not aligned
-        last_moving = list(self.moving)
-        if self.aligned and self.speedup_timer.time_left < 0.5:
-            while self.command_queue.qsize():
-                next_command = self.command_queue.get()
-                match next_command:
-                    case command.Command(command_name=command.COMMAND_UP):
-                        self.moving[1] -= 1
-                    case command.Command(command_name=command.COMMAND_STOP_UP) if self.moving[1] < 0:
-                        self.moving[1] += 1
-
-                    case command.Command(command_name=command.COMMAND_DOWN):
-                        self.moving[1] += 1
-                    case command.Command(command_name=command.COMMAND_STOP_DOWN) if self.moving[1] > 0:
-                        self.moving[1] -= 1
-
-                    case command.Command(command_name=command.COMMAND_LEFT):
-                        self.moving[0] -= 1
-                    case command.Command(command_name=command.COMMAND_STOP_LEFT) if self.moving[0] < 0:
-                        self.moving[0] += 1
-
-                    case command.Command(command_name=command.COMMAND_RIGHT):
-                        self.moving[0] += 1
-                    case command.Command(command_name=command.COMMAND_STOP_RIGHT) if self.moving[0] > 0:
-                        self.moving[0] -= 1
-        self.moving[0] = pygame.math.clamp(self.moving[0], -1, 1)
-        self.moving[1] = pygame.math.clamp(self.moving[1], -1, 1)
-        speed = self.SPEED
-        self.speedup_timer.update()
-        if self.speedup_timer.time_left:
-            speed = self.SPEEDY_SPEED
-        # state handling for visuals
-        for anim in self.anim_dict.values():
-            anim.update()
-        if self.moving != last_moving and pygame.Vector2(last_moving):
-            self.last_moving = last_moving
-        # actual motion
-        if pygame.Vector2(self.moving):
-            self.velocity = pygame.Vector2(self.moving)
-            self.velocity.scale_to_length(speed)
+                self.velocity = pygame.Vector2()
+            motion = self.velocity * common.dt
+            self.rect.x += motion.x
+            rect = pygame.Rect(self.rect)
+            moved = False
+            for sprite in common.current_state.squares:
+                if sprite.team == settings.TEAM_ROCK and sprite.rect.colliderect(rect):
+                    if motion.x >= 0:
+                        self.rect.right = sprite.rect.left
+                        moved = True
+                    else:
+                        self.rect.left = sprite.rect.right
+                        moved = True
+            self.rect.y += motion.y
+            rect = pygame.Rect(self.rect)
+            for sprite in common.current_state.squares:
+                if sprite.team == settings.TEAM_ROCK and sprite.rect.colliderect(rect):
+                    if motion.y >= 0:
+                        self.rect.bottom = sprite.rect.top
+                        moved = True
+                    else:
+                        self.rect.top = sprite.rect.bottom
+                        moved = True
+            if moved:
+                self.controller.on_motion_input()
+            self.rect.clamp_ip((0, 0, 64, 64))
+            self.blink_timer.update()
+            if not self.blink_timer.time_left:
+                self.blink_timer.restart()
+                self.blink_on = not self.blink_on
         else:
-            self.velocity = pygame.Vector2()
-        motion = self.velocity * common.dt
-        self.rect.x += motion.x
-        rect = pygame.Rect(self.rect)
-        moved = False
-        for sprite in common.current_state.squares:
-            if sprite.team == settings.TEAM_ROCK and sprite.rect.colliderect(rect):
-                if motion.x >= 0:
-                    self.rect.right = sprite.rect.left
-                    moved = True
-                else:
-                    self.rect.left = sprite.rect.right
-                    moved = True
-        self.rect.y += motion.y
-        rect = pygame.Rect(self.rect)
-        for sprite in common.current_state.squares:
-            if sprite.team == settings.TEAM_ROCK and sprite.rect.colliderect(rect):
-                if motion.y >= 0:
-                    self.rect.bottom = sprite.rect.top
-                    moved = True
-                else:
-                    self.rect.top = sprite.rect.bottom
-                    moved = True
-        if moved:
-            self.controller.on_motion_input()
-        self.rect.clamp_ip((0, 0, 64, 64))
-        self.blink_timer.update()
-        if not self.blink_timer.time_left:
-            self.blink_timer.restart()
-            self.blink_on = not self.blink_on
+            self.ghost_anim.update()
+            self.rect.topleft = pygame.Vector2(self.rect.topleft).move_towards(self.spawn_point, self.GHOST_SPEED * common.dt)
+            if self.rect.topleft == self.spawn_point:
+                self.ghost_anim.restart()
+                self.whacked = False
 
 
 class Speedup(pygame.sprite.Sprite):
@@ -198,6 +250,30 @@ class Speedup(pygame.sprite.Sprite):
             if self.rect.collidepoint(player.rect.center) and player.aligned:
                 player.speedup(self.direction)
                 self.kill()
+
+
+class ShotGun(pygame.sprite.Sprite):
+    def __init__(self, pos: tuple[int, int]):
+        super().__init__()
+        self.image = assets.images["gun"]
+        self.rect = pygame.Rect(pos, (8, 8))
+        self.player = None
+
+    def update(self):
+        if self.player is None:
+            for player in common.current_state.players:
+                if self.rect.collidepoint(player.rect.center) and player.aligned:
+                    player.set_powerup(self)
+                    self.player = player
+        else:
+            if self.player.rect.top < 8:
+                self.rect.center = self.player.rect.midbottom
+            else:
+                self.rect.center = self.player.rect.midtop
+
+    def use(self):
+        common.current_state.sprites.add(Bullet(self.rect.center, pygame.Vector2(self.player.facing), self.player))
+        self.player.dequip_powerup()
 
 
 class Square(pygame.sprite.Sprite):
@@ -308,7 +384,7 @@ class SquareSpriteGroup(pygame.sprite.Group):
 
 
 class Gameplay:
-    POWERUPS = (Speedup,)
+    POWERUPS = (Speedup, ShotGun)
 
     def __init__(self):
         # timer
