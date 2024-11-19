@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 import pygame
 
@@ -8,23 +8,43 @@ from . import common, assets
 class UIManager:
     def __init__(self):
         self.widgets: list[Widget] = []
+        self.static: list[Static] = []
+        self.selectables: dict[str, Static | Widget] = {}
         self.selector_arrow = SelectorArrow()
 
-    def add(self, *widgets, initial_selected=False):
+    def add(self, widget, initial_selected=False, selector: str | None = None):
         if not initial_selected:
-            self.widgets.extend(widgets)
-        elif initial_selected and len(widgets) == 1:
-            self.widgets.append(widgets[0])
-            self.selector_arrow.last_selection = widgets[0]
+            self.widgets.append(widget)
+        else:
+            self.widgets.append(widget)
+            self.selector_arrow.last_selection = widget
             self.selector_arrow.shown = True
-            self.selector_arrow.rect.midright = pygame.Vector2(widgets[0].rect.midleft) - (
+            self.selector_arrow.rect.midright = pygame.Vector2(widget.rect.midleft) - (
                 self.selector_arrow.dist,
                 0,
             )
             self.selector_arrow.current_idx = len(self.widgets) - 1
-        else:
-            raise Exception("only one initial selected can be specified at a time")
+
+        self._add_selectable(widget=widget, selector=selector)
+
         return self
+
+    def add_static(self, widget, selector: str | None):
+        self.static.append(widget)
+        self._add_selectable(widget=widget, selector=selector)
+        return self
+
+    def _add_selectable(self, widget, selector: str | None) -> None:
+        if selector is None:
+            return
+
+        if selector in self.selectables:
+            raise ValueError("duplicate selectors not allowed")
+
+        self.selectables[selector] = widget
+
+    def __getitem__(self, item: str) -> "Static | Widget":
+        return self.selectables[item]
 
     def update(self):
         selected = None
@@ -75,13 +95,21 @@ class UIManager:
         for widget in self.widgets:
             dst.blit(widget.image, widget.rect)
 
+        for widget in self.static:
+            dst.blit(widget.image, widget.rect)
+
         if self.selector_arrow.shown:
             dst.blit(self.selector_arrow.image, self.selector_arrow.rect)
 
 
-class Widget(Protocol):
+@runtime_checkable
+class Static(Protocol):
     image: pygame.Surface
     rect: pygame.Rect | pygame.FRect
+
+
+class Widget(Static):
+    position: pygame.Vector2
     collide_rect: pygame.Rect | pygame.FRect
 
     def update(self) -> None: ...
@@ -91,10 +119,16 @@ class SelectorArrow:
     def __init__(self, dist=2):
         self.dist = dist
         self.image = assets.images["selector_arrow"]
-        self.rect = self.image.get_rect()
+        self.rect = self.image.get_frect()
         self.shown = False
         self.last_selection = None
         self.current_idx = 0
+
+
+class Image:
+    def __init__(self, position, image: pygame.Surface) -> None:
+        self.image = image.copy()
+        self.rect = image.get_rect(topleft=position)
 
 
 class Button:
