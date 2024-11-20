@@ -2,6 +2,7 @@ import pygame
 
 from . import settings, timer, animation, assets, chunky, common
 
+
 def nine_slice(images, size):
     image = pygame.Surface(size).convert()
     image.fill("magenta")

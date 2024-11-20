@@ -81,7 +81,7 @@ class UIManager:
         if selected is not None:
             self.selector_arrow.rect.midright = pygame.Vector2(selected.collide_rect.midleft) - (
                 self.selector_arrow.dist,
-                0,
+                -1,
             )
             self.selector_arrow.shown = True
             self.selector_arrow.last_selection = selected
@@ -163,7 +163,7 @@ class Button:
         position = self.position.copy()
 
         if self.is_hovered:
-            position.x += 1
+            position.x += 2
             # rect.width += 1
 
         rect.topleft = position

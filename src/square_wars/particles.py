@@ -2,6 +2,7 @@ import pygame, random
 
 from . import timer, common
 
+
 class PixelParticle(pygame.sprite.Sprite):
     def __init__(self, position, layer, color, direction, life):
         super().__init__()
@@ -20,6 +21,7 @@ class PixelParticle(pygame.sprite.Sprite):
         self.life_timer.update()
         if not self.life_timer.time_left:
             self.kill()
+
 
 def particle_splash(position, layer, color, count):
     for _ in range(count):
