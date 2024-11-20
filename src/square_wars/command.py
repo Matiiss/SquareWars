@@ -1,5 +1,6 @@
 import queue
 import pygame
+import random
 
 from . import common
 from . import settings
@@ -172,7 +173,7 @@ class DumbAIController(Controller):
             self.initial_frame = False
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
-        if self.sprite.aligned and not self.sprite.speedup_timer.time_left:
+        if self.sprite.aligned and not self.sprite.speedup_timer.time_left  and not random.randint(0, 50):
             go = True
             if not self.pathfind_queue.qsize():
                 go = self.pathfind()

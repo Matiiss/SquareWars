@@ -136,6 +136,7 @@ class Player(pygame.sprite.Sprite):
         self.powerup = None
 
     def whack(self):
+        assets.sfx["whack"].play()
         self.whacked = True
 
     def update(self) -> None:
@@ -263,6 +264,7 @@ class Speedup(pygame.sprite.Sprite):
         self.image = self.anim.image
         for player in common.current_state.players:
             if self.rect.collidepoint(player.rect.center) and player.aligned:
+                assets.sfx["speedup"].play()
                 player.speedup(self.direction)
                 self.kill()
 
@@ -280,6 +282,7 @@ class ShotGun(pygame.sprite.Sprite):
                 if self.rect.collidepoint(player.rect.center) and player.aligned:
                     player.set_powerup(self)
                     self.player = player
+                    assets.sfx["pickup"].play()
         else:
             if self.player.rect.top < 8:
                 self.rect.center = self.player.rect.midbottom
@@ -287,6 +290,7 @@ class ShotGun(pygame.sprite.Sprite):
                 self.rect.center = self.player.rect.midtop
 
     def use(self):
+        assets.sfx["gunshot"].play()
         common.current_state.sprites.add(Bullet(self.rect.center, pygame.Vector2(self.player.facing), self.player))
         self.player.dequip_powerup()
         self.kill()
@@ -308,6 +312,7 @@ class GasCan(pygame.sprite.Sprite):
         self.player = None
 
     def explode(self):
+        assets.sfx["explosion"].play()
         self.kill()
         x, y = int(self.rect.left / 8), int(self.rect.top / 8)
         common.current_state.sprites.add(Explosion(self.rect.topleft))
@@ -320,6 +325,7 @@ class GasCan(pygame.sprite.Sprite):
             if self.player is None:
                 for player in common.current_state.players:
                     if self.rect.collidepoint(player.rect.center) and player.aligned:
+                        assets.sfx["pickup"].play()
                         player.set_powerup(self)
                         self.player = player
             else:
@@ -356,6 +362,7 @@ class Barbwire(pygame.sprite.Sprite):
                 if self.live and player is not self.owner:
                     player.whack()
                 if not self.live:
+                    assets.sfx["barbwire"].play()
                     self.owner = player
                     self.live = True
         if self.live:

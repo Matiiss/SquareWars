@@ -62,6 +62,14 @@ def load_assets():
     )
     sfx.update(
         {
-            # "sfx": load_sound("sfx")
+            "barbwire": load_sound("barbwire"),
+            "grass": load_sound("grass"),
+            "gunshot": load_sound("gunshot"),
+            "pickup": load_sound("pickup"),
+            "select": load_sound("select"),
+            "switch": load_sound("switch"),
+            "whack": load_sound("whack"),
+            "explosion": load_sound("explosion"),
+            "speedup": load_sound("speedup"),
         }
     )
