@@ -33,6 +33,26 @@ class Bullet(pygame.sprite.Sprite):
                 self.kill()
 
 
+
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, pos: tuple[int, int]):
+        super().__init__()
+        self.rect = pygame.FRect(pos, (8, 8))
+        self.anim = animation.NoLoopAnimation(animation.get_spritesheet(assets.images["explosion"]))
+        self.image = self.anim.image
+
+    def update(self):
+        self.anim.update()
+        self.image = self.anim.image
+        x, y = int(self.rect.x / 8), int(self.rect.y / 8)
+        common.current_state.squares.get_sprite_by_coordinate(x, y).reset()
+        for player in common.current_state.players:
+            if self.rect.collidepoint(player.rect.center):
+                player.whack()
+        if self.anim.done():
+            self.kill()
+
+
 class Player(pygame.sprite.Sprite):
     SPEED = 32
     SPEEDY_SPEED = 64
@@ -113,7 +133,6 @@ class Player(pygame.sprite.Sprite):
         self.powerup = sprite
 
     def dequip_powerup(self):
-        self.powerup.kill()
         self.powerup = None
 
     def whack(self):
@@ -270,6 +289,55 @@ class ShotGun(pygame.sprite.Sprite):
     def use(self):
         common.current_state.sprites.add(Bullet(self.rect.center, pygame.Vector2(self.player.facing), self.player))
         self.player.dequip_powerup()
+        self.kill()
+
+
+class GasCan(pygame.sprite.Sprite):
+    def __init__(self, pos: tuple[int, int]):
+        super().__init__()
+        frames = animation.get_spritesheet(assets.images["gascan"])
+        self.anim_dict = {
+            "idle": animation.SingleAnimation(frames[0]),
+            "lit": animation.Animation(frames[:3]),
+        }
+        self.rect = pygame.FRect(pos, (8, 8))
+        self.anim = self.anim_dict["idle"]
+        self.image = self.anim.image
+        self.explosion_timer = timer.Timer(1)
+        self.state = "idle"
+        self.player = None
+
+    def explode(self):
+        self.kill()
+        x, y = int(self.rect.left / 8), int(self.rect.top / 8)
+        common.current_state.sprites.add(Explosion(self.rect.topleft))
+        for nx, ny in common.current_state.squares.get_neighbors((x, y), True):
+            print(nx, ny)
+            common.current_state.sprites.add(Explosion((nx * 8, ny * 8)))
+
+    def update(self):
+        if self.state == "idle":
+            if self.player is None:
+                for player in common.current_state.players:
+                    if self.rect.collidepoint(player.rect.center) and player.aligned:
+                        player.set_powerup(self)
+                        self.player = player
+            else:
+                if self.player.rect.top < 8:
+                    self.rect.center = self.player.rect.midbottom
+                else:
+                    self.rect.center = self.player.rect.midtop
+        else:
+            self.explosion_timer.update()
+            if not self.explosion_timer.time_left:
+                self.explode()
+        self.anim.update()
+        self.image = self.anim.image
+
+    def use(self):
+        self.rect.center = self.player.rect.center
+        self.anim = self.anim_dict["lit"]
+        self.state = "lit"
 
 
 class Square(pygame.sprite.Sprite):
@@ -314,6 +382,11 @@ class Square(pygame.sprite.Sprite):
         self.teamchange_timer = timer.Timer(0.3)
         self._x = 0
         self._y = 0
+
+    def reset(self):
+        self.team = settings.TEAM_NONE
+        self.owner = None
+        self.image = self.images[self.team]
 
     def update(self) -> None:
         self.teamchange_timer.update()
@@ -379,11 +452,11 @@ class SquareSpriteGroup(pygame.sprite.Group):
         return (x, y) in self.grid
 
     def is_clear_position(self, x, y):
-        return self.has_at_position(x, y) and self.get_sprite_by_coordinate(x, y).team in {settings.TEAM_1, settings.TEAM_2, settings.TEAM_3}
+        return self.has_at_position(x, y) and self.get_sprite_by_coordinate(x, y).team in {settings.TEAM_1, settings.TEAM_2, settings.TEAM_NONE}
 
 
 class Gameplay:
-    POWERUPS = (Speedup, ShotGun)
+    POWERUPS = (Speedup, ShotGun, GasCan)
 
     def __init__(self):
         # timer

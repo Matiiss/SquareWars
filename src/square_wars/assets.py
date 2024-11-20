@@ -55,6 +55,8 @@ def load_assets():
             "menu_title": load_image("menu_title"),
             "gun": load_image("gun"),
             "ghost": load_image("ghost"),
+            "gascan": load_image("gascan"),
+            "explosion": load_image("explosion"),
         }
     )
     sfx.update(
