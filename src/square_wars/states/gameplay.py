@@ -340,6 +340,31 @@ class GasCan(pygame.sprite.Sprite):
         self.state = "lit"
 
 
+class Barbwire(pygame.sprite.Sprite):
+    def __init__(self, position: tuple[int, int], owner=None):
+        super().__init__()
+        self.live_timer = timer.Timer(7)
+        self.rect = pygame.Rect(position, (8, 8))
+        self.images = animation.get_spritesheet(assets.images["barbwire"])
+        self.live = owner is not None
+        self.image = self.images[self.live]
+        self.owner = owner
+
+    def update(self):
+        for player in common.current_state.players:
+            if self.rect.collidepoint(player.rect.center) and player.aligned:
+                if self.live and player is not self.owner:
+                    player.whack()
+                if not self.live:
+                    self.owner = player
+                    self.live = True
+        if self.live:
+            self.live_timer.update()
+            if not self.live_timer.time_left:
+                self.kill()
+        self.image = self.images[self.live]
+
+
 class Square(pygame.sprite.Sprite):
     def __init__(
         self,
@@ -456,7 +481,7 @@ class SquareSpriteGroup(pygame.sprite.Group):
 
 
 class Gameplay:
-    POWERUPS = (Speedup, ShotGun, GasCan)
+    POWERUPS = (Speedup, ShotGun, GasCan, Barbwire)
 
     def __init__(self):
         # timer

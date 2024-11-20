@@ -57,6 +57,7 @@ def load_assets():
             "ghost": load_image("ghost"),
             "gascan": load_image("gascan"),
             "explosion": load_image("explosion"),
+            "barbwire": load_image("barbwire")
         }
     )
     sfx.update(
