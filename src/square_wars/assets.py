@@ -53,10 +53,23 @@ def load_assets():
             "play_button": load_image("play_button"),
             "settings_button": load_image("settings_button"),
             "menu_title": load_image("menu_title"),
+            "gun": load_image("gun"),
+            "ghost": load_image("ghost"),
+            "gascan": load_image("gascan"),
+            "explosion": load_image("explosion"),
+            "barbwire": load_image("barbwire")
         }
     )
     sfx.update(
         {
-            # "sfx": load_sound("sfx")
+            "barbwire": load_sound("barbwire"),
+            "grass": load_sound("grass"),
+            "gunshot": load_sound("gunshot"),
+            "pickup": load_sound("pickup"),
+            "select": load_sound("select"),
+            "switch": load_sound("switch"),
+            "whack": load_sound("whack"),
+            "explosion": load_sound("explosion"),
+            "speedup": load_sound("speedup"),
         }
     )

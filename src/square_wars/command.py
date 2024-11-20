@@ -1,5 +1,6 @@
 import queue
 import pygame
+import random
 
 from . import common
 from . import settings
@@ -158,6 +159,8 @@ class DumbAIController(Controller):
         return True
 
     def update(self) -> None:
+        if self.sprite.powerup is not None:
+            self.command_queue.put(Command(COMMAND_SHOOT))
         if (
             self.sprite.aligned
             and common.current_state.squares.get_sprite_by_coordinate(
