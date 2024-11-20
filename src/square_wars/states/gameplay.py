@@ -528,14 +528,14 @@ class Gameplay:
                 )
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
+        # spawn human player
+        controller = command.InputControllerA()
+        player = Player(controller, (0, 0), settings.TEAM_2)
+        self.sprites.add(player)
+        self.players.add(player)
         # spawn bot player
         controller = command.DumbAIController()
         player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_1)
-        self.sprites.add(player)
-        self.players.add(player)
-        # spawn human player
-        controller = command.InputController()
-        player = Player(controller, (0, 0), settings.TEAM_2)
         self.sprites.add(player)
         self.players.add(player)
         # play ost
