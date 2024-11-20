@@ -136,8 +136,9 @@ class Player(pygame.sprite.Sprite):
         self.powerup = None
 
     def whack(self):
-        assets.sfx["whack"].play()
-        self.whacked = True
+        if not self.whacked:
+            assets.sfx["whack"].play()
+            self.whacked = True
 
     def update(self) -> None:
         if not self.whacked:
@@ -436,7 +437,7 @@ class Square(pygame.sprite.Sprite):
                     changed = True
             else:
                 for sprite in pygame.sprite.spritecollide(self, self.player_group, False, center_point_collide):
-                    if sprite is not self.occupant:
+                    if sprite is not self.occupant and not sprite.whacked:
                         self.occupant = sprite
                         self.teamchange_timer.restart()
                         if self.occupant.speedup_timer.time_left:
