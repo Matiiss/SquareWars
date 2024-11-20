@@ -159,6 +159,8 @@ class DumbAIController(Controller):
         return True
 
     def update(self) -> None:
+        if self.sprite.powerup is not None:
+            self.command_queue.put(Command(COMMAND_SHOOT))
         if (
             self.sprite.aligned
             and common.current_state.squares.get_sprite_by_coordinate(
@@ -173,7 +175,7 @@ class DumbAIController(Controller):
             self.initial_frame = False
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
-        if self.sprite.aligned and not self.sprite.speedup_timer.time_left  and not random.randint(0, 50):
+        if self.sprite.aligned and not self.sprite.speedup_timer.time_left:
             go = True
             if not self.pathfind_queue.qsize():
                 go = self.pathfind()
