@@ -467,7 +467,7 @@ class SquareSpriteGroup(pygame.sprite.Group):
             x, y = sprite._x, sprite._y
         for nx in range(x - 1, x + 2):
             for ny in range(y - 1, y + 2):
-                if abs(nx - x) + abs(ny - y) in distances and (nx, ny) in self.grid.keys():
+                if abs(nx - x) + abs(ny - y) in distances and self.is_clear_position(nx, ny):
                     yield nx, ny
 
     def get_sprite_by_coordinate(self, x: int, y: int) -> Square:
