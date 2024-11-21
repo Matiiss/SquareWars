@@ -449,7 +449,13 @@ class Square(pygame.sprite.Sprite):
                 self.team_group.add(self)
                 self.owner.squares.remove(self)
         # change color
-        self.image = self.images[self.team]
+        self.image = self.images[self.team].copy()
+        if self.occupant and self.teamchange_timer.time_left:
+            if self.occupant.team == settings.TEAM_1:
+                color = settings.TEAM1_COLOR
+            else:
+                color = settings.TEAM2_COLOR
+            pygame.draw.line(self.image, color, (0, 8), (0, round(self.teamchange_timer.decimal_percent_done * 8)))
 
 
 class SquareSpriteGroup(pygame.sprite.Group):
