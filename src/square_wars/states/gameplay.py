@@ -8,7 +8,7 @@ from .. import command
 from .. import common
 from .. import animation
 from .. import assets
-from .. import timer
+from .. import timer, scoreboard
 
 
 def center_point_collide(sprite1, sprite2):
@@ -499,12 +499,14 @@ class Gameplay:
 
     def __init__(self):
         # timer
-        self.timer = timer.Timer(64)
+        self.timer = timer.Timer(4)
         self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
         # sprite groups
         self.sprites = pygame.sprite.Group()
         self.players = pygame.sprite.Group()
+        self.hud = pygame.sprite.Group()
+        self.added_scoreboard = False
         # handles squares as a graph of neighbouring sprites for BFS
         self.squares = SquareSpriteGroup()
         self.blanks = pygame.sprite.Group()
@@ -548,6 +550,12 @@ class Gameplay:
         pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
         pygame.mixer.music.play()
 
+    def get_square_count(self, team):
+        return 6
+
+    def get_ko_count(self, team):
+        return 7
+
     def update(self) -> None:
         if self.timer.time_left:
             self.sprites.update()
@@ -560,9 +568,14 @@ class Gameplay:
                     if self.squares.is_clear_position(*spot):
                         break
                 self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
+        elif not self.added_scoreboard:
+            self.hud.add(scoreboard.ScoreBoard(self))
+            self.added_scoreboard = True
+        self.hud.update()
 
     def draw(self) -> None:
         self.sprites.draw(common.screen)
+        self.hud.draw(common.screen)
 
     def transition_init(self) -> None:
         # hax
