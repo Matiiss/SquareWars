@@ -9,7 +9,7 @@ class Timer:
         self.max_time: float = amount
 
     @property
-    def decimal_percent_done(self):
+    def decimal_percent_left(self):
         return self.time_left / self.max_time
 
     def update(self) -> float:

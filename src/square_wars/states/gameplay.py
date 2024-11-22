@@ -139,6 +139,7 @@ class Player(pygame.sprite.Sprite):
         if not self.whacked:
             assets.sfx["whack"].play()
             self.whacked = True
+            common.current_state.kos[self.team] += 1
 
     def update(self) -> None:
         if not self.whacked:
@@ -455,7 +456,7 @@ class Square(pygame.sprite.Sprite):
                 color = settings.TEAM1_COLOR
             else:
                 color = settings.TEAM2_COLOR
-            pygame.draw.line(self.image, color, (0, 8), (0, round(self.teamchange_timer.decimal_percent_done * 8)))
+            pygame.draw.line(self.image, color, (0, 8), (0, round(self.teamchange_timer.decimal_percent_left * 8)))
 
 
 class SquareSpriteGroup(pygame.sprite.Group):
@@ -499,7 +500,7 @@ class Gameplay:
 
     def __init__(self):
         # timer
-        self.timer = timer.Timer(4)
+        self.timer = timer.Timer(64)
         self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
         # sprite groups
@@ -549,12 +550,22 @@ class Gameplay:
         # play ost
         pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
         pygame.mixer.music.play()
+        self.kos = {
+            settings.TEAM_1: 0,
+            settings.TEAM_2: 0,
+        }
+        # handles exit
+        self.dead = False
 
     def get_square_count(self, team):
-        return 6
+        count = 0
+        for square in self.squares.sprites():
+            if square.team == team:
+                count += 1
+        return count
 
     def get_ko_count(self, team):
-        return 7
+        return self.kos[team]
 
     def update(self) -> None:
         if self.timer.time_left:
