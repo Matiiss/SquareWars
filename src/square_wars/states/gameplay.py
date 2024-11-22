@@ -443,8 +443,8 @@ class Square(pygame.sprite.Sprite):
                     settings.TEAM_NONE,
                     settings.TEAM_1,
                     settings.TEAM_2,
-                    settings.TEAM_2_SPAWN,
                     settings.TEAM_1_SPAWN,
+                    settings.TEAM_2_SPAWN,
                 ),
                 animation.get_spritesheet(assets.images["tileset"]),
             )
@@ -580,12 +580,12 @@ class Gameplay:
                 self.squares.add_to_grid(sprite, x, y)
         # spawn human player
         controller = command.InputControllerA()
-        player = Player(controller, (0, 0), settings.TEAM_2)
+        player = Player(controller, (0, 0), settings.TEAM_1)
         self.sprites.add(player)
         self.players.add(player)
         # spawn bot player
         controller = command.DumbAIController()
-        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_1)
+        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_2)
         self.sprites.add(player)
         self.players.add(player)
         # play ost
