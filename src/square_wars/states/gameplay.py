@@ -273,6 +273,9 @@ class Speedup(pygame.sprite.Sprite):
             self.direction, self.anim = tuple(anim_dict.values())[0]
         self.image = self.anim.image
 
+    def unused(self):
+        return True  # use kills it
+
     def update_visuals(self):
         self.anim.update()
         self.image = self.anim.image
@@ -292,6 +295,9 @@ class ShotGun(pygame.sprite.Sprite):
         self.image = assets.images["gun"]
         self.rect = pygame.Rect(pos, (8, 8))
         self.player = None
+
+    def unused(self):
+        return self.player is None
 
     def update_visuals(self):
         pass
@@ -331,6 +337,9 @@ class GasCan(pygame.sprite.Sprite):
         self.explosion_timer = timer.Timer(1)
         self.state = "idle"
         self.player = None
+
+    def unused(self):
+        return self.player is None
 
     def explode(self):
         assets.sfx["explosion"].play()
@@ -379,6 +388,9 @@ class Barbwire(pygame.sprite.Sprite):
         self.live = owner is not None
         self.image = self.images[self.live]
         self.owner = owner
+
+    def unused(self):
+        return not self.live
 
     def update_visuals(self):
         self.image = self.images[self.live]
@@ -544,13 +556,13 @@ class Gameplay:
         self.team_two_squares = pygame.sprite.Group()
         # decide on rock placement
         rocks = set()
-        no_rock_spots = {(0, 0), (7, 7)}
+        self.used_spots = {(0, 0), (7, 7)}
         for _ in range(6):
             nx, ny = random.randint(0, 7), random.randint(0, 7)
-            if (nx, ny) in no_rock_spots:
+            if (nx, ny) in self.used_spots:
                 continue
             rocks.add((nx, ny))
-            no_rock_spots.add((nx, ny))
+            self.used_spots.add((nx, ny))
         # spawn grid
         for x in range(0, 8):
             for y in range(0, 8):
@@ -605,9 +617,11 @@ class Gameplay:
                 self.powerup_timer.restart()
                 while True:
                     spot = (random.randint(0, 7), random.randint(0, 7))
-                    if self.squares.is_clear_position(*spot):
+                    if spot not in self.used_spots and self.squares.is_clear_position(*spot):
                         break
-                self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
+                powerup = random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8))
+                self.used_spots.add(spot)
+                self.sprites.add(powerup)
         elif not self.added_scoreboard:
             self.hud.add(scoreboard.ScoreBoard(self))
             self.added_scoreboard = True
