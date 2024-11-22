@@ -19,6 +19,7 @@ class Bullet(pygame.sprite.Sprite):
     SPEED = 64
     def __init__(self, pos: tuple[int, int], direction: pygame.Vector2, owner: pygame.sprite.Sprite):
         super().__init__()
+        self.layer = 3
         self.image = pygame.Surface((1, 1))
         self.image.fill("#131313")
         self.rect = pygame.FRect(pos, (1, 1))
@@ -41,6 +42,7 @@ class Bullet(pygame.sprite.Sprite):
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 3
         self.rect = pygame.FRect(pos, (8, 8))
         self.anim = animation.NoLoopAnimation(animation.get_spritesheet(assets.images["explosion"]))
         self.image = self.anim.image
@@ -70,6 +72,7 @@ class Player(pygame.sprite.Sprite):
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
+        self.layer = 3
         self.controller = controller
         self.team = team
         self.rect = pygame.FRect(0, 0, 8, 8)
@@ -259,6 +262,7 @@ class Player(pygame.sprite.Sprite):
 class Speedup(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 2
         self.rect = pygame.FRect(pos, (8, 8))
         x, y = int(pos[0] / 8), int(pos[1] / 8)
         anim_dict = {
@@ -302,6 +306,7 @@ class Speedup(pygame.sprite.Sprite):
 class ShotGun(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 4
         self.image = assets.images["gun"]
         self.rect = pygame.Rect(pos, (8, 8))
         self.player = None
@@ -333,6 +338,7 @@ class ShotGun(pygame.sprite.Sprite):
 class GasCan(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 4
         frames = animation.get_spritesheet(assets.images["gascan"])
         self.anim_dict = {
             "idle": animation.SingleAnimation(frames[0]),
@@ -386,6 +392,7 @@ class GasCan(pygame.sprite.Sprite):
 class Barbwire(pygame.sprite.Sprite):
     def __init__(self, position: tuple[int, int], owner=None):
         super().__init__()
+        self.layer = 4
         self.live_timer = timer.Timer(7)
         self.rect = pygame.Rect(position, (8, 8))
         self.images = animation.get_spritesheet(assets.images["barbwire"])
@@ -426,6 +433,7 @@ class Square(pygame.sprite.Sprite):
         start_team: settings.TEAM_NONE,
     ):
         super().__init__()
+        self.layer = 1
         self.rect = pygame.FRect(0, 0, 8, 8)
         self.rect.topleft = pos
         self.player_group = player_group
@@ -549,7 +557,7 @@ class Gameplay:
         self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
         # sprite groups
-        self.sprites = pygame.sprite.Group()
+        self.sprites = pygame.sprite.LayeredUpdates()
         self.players = pygame.sprite.Group()
         self.hud = pygame.sprite.Group()
         self.added_scoreboard = False
