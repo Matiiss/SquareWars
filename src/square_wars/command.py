@@ -106,7 +106,7 @@ class InputControllerB(InputControllerA):
 class DumbAIController(Controller):
     def __init__(self):
         super().__init__()
-        self.random_latency = 15 # increasing this slows the AI down
+        self.random_latency = 8 # increasing this slows the AI down
         self.pathfind_queue = queue.Queue()
         self.initial_frame = True
         self.target_teams = {settings.TEAM_1, settings.TEAM_2, settings.TEAM_NONE}
