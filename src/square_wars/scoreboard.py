@@ -89,4 +89,4 @@ class ScoreBoard(pygame.sprite.Sprite):
                 self.leaving = True
                 self.down_timer.restart()
         if self.leaving and not self.down_timer.time_left:
-            raise SystemExit("Matt make a nice transition back into main menu here pls!")
+            raise NotImplementedError("Matt make a nice transition back into main menu here pls!")

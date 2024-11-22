@@ -317,9 +317,9 @@ class GasCan(pygame.sprite.Sprite):
         assets.sfx["explosion"].play()
         self.kill()
         x, y = int(self.rect.left / 8), int(self.rect.top / 8)
-        common.current_state.sprites.add(Explosion(self.rect.topleft))
-        for nx, ny in common.current_state.squares.get_neighbors((x, y), True):
-            print(nx, ny)
+        if common.current_state.squares.is_clear_position(x, y):
+            common.current_state.sprites.add(Explosion((x * 8, y * 8)))
+        for nx, ny in list(common.current_state.squares.get_neighbors((x, y), True)):
             common.current_state.sprites.add(Explosion((nx * 8, ny * 8)))
 
     def update(self):
@@ -418,9 +418,10 @@ class Square(pygame.sprite.Sprite):
         self._y = 0
 
     def reset(self):
-        self.team = settings.TEAM_NONE
-        self.owner = None
-        self.image = self.images[self.team]
+        if self.team in {settings.TEAM_NONE, settings.TEAM_1, settings.TEAM_2}:
+            self.team = settings.TEAM_NONE
+            self.owner = None
+            self.image = self.images[self.team]
 
     def update(self) -> None:
         self.teamchange_timer.update()
