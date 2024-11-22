@@ -44,6 +44,7 @@ class Explosion(pygame.sprite.Sprite):
         self.rect = pygame.FRect(pos, (8, 8))
         self.anim = animation.NoLoopAnimation(animation.get_spritesheet(assets.images["explosion"]))
         self.image = self.anim.image
+        self.deadly_timer = timer.Timer(0.6)
 
     def update_visuals(self):
         self.anim.update()
@@ -51,11 +52,13 @@ class Explosion(pygame.sprite.Sprite):
 
     def update(self):
         self.update_visuals()
+        self.deadly_timer.update()
         x, y = int(self.rect.x / 8), int(self.rect.y / 8)
         common.current_state.squares.get_sprite_by_coordinate(x, y).reset()
-        for player in common.current_state.players:
-            if self.rect.collidepoint(player.rect.center):
-                player.whack()
+        if self.deadly_timer.time_left:
+            for player in common.current_state.players:
+                if self.rect.collidepoint(player.rect.center):
+                    player.whack()
         if self.anim.done():
             self.kill()
 
