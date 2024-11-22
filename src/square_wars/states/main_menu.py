@@ -30,10 +30,12 @@ class MainMenu:
     def update(self) -> None:
         self.ui_manager.update()
 
-    def draw(self) -> None:
+    def draw(self, surface=None) -> None:
         # common.screen.blit(assets.images["menu_bg"], (0, 0))
-        common.screen.fill("darkgreen")
-        self.ui_manager.draw(common.screen)
+        if surface is None:
+            surface = common.screen
+        surface.fill("darkgreen")
+        self.ui_manager.draw(surface)
 
     def transition_update(self) -> None:
         p_button = self.ui_manager["play_button"]
