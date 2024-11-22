@@ -24,8 +24,12 @@ class Bullet(pygame.sprite.Sprite):
         self.rect = pygame.FRect(pos, (1, 1))
         self.velocity = direction.normalize() * self.SPEED
         self.owner = owner
+    
+    def update_visuals(self):
+        pass
 
     def update(self):
+        self.update_visuals()
         self.rect.center += self.velocity * common.dt
         for player in common.current_state.players:
             if player.rect.colliderect(self.rect) and player is not self.owner:
@@ -41,9 +45,12 @@ class Explosion(pygame.sprite.Sprite):
         self.anim = animation.NoLoopAnimation(animation.get_spritesheet(assets.images["explosion"]))
         self.image = self.anim.image
 
-    def update(self):
+    def update_visuals(self):
         self.anim.update()
         self.image = self.anim.image
+
+    def update(self):
+        self.update_visuals()
         x, y = int(self.rect.x / 8), int(self.rect.y / 8)
         common.current_state.squares.get_sprite_by_coordinate(x, y).reset()
         for player in common.current_state.players:
@@ -141,7 +148,14 @@ class Player(pygame.sprite.Sprite):
             self.whacked = True
             common.current_state.kos[self.team] += 1
 
+    def update_visuals(self):
+        for anim in self.anim_dict.values():
+                anim.update()
+        self.ghost_anim.update()
+
+
     def update(self) -> None:
+        self.update_visuals()
         if not self.whacked:
             # Do command reading in 2 stages
             # Stage 1: realtime, cache non-realtime commands
@@ -187,8 +201,6 @@ class Player(pygame.sprite.Sprite):
             if self.speedup_timer.time_left:
                 speed = self.SPEEDY_SPEED
             # state handling for visuals
-            for anim in self.anim_dict.values():
-                anim.update()
             if self.moving != last_moving and pygame.Vector2(last_moving):
                 self.last_moving = last_moving
             # actual motion
@@ -261,9 +273,12 @@ class Speedup(pygame.sprite.Sprite):
             self.direction, self.anim = tuple(anim_dict.values())[0]
         self.image = self.anim.image
 
-    def update(self):
+    def update_visuals(self):
         self.anim.update()
         self.image = self.anim.image
+
+    def update(self):
+        self.update_visuals()
         for player in common.current_state.players:
             if self.rect.collidepoint(player.rect.center) and player.aligned:
                 assets.sfx["speedup"].play()
@@ -278,7 +293,11 @@ class ShotGun(pygame.sprite.Sprite):
         self.rect = pygame.Rect(pos, (8, 8))
         self.player = None
 
+    def update_visuals(self):
+        pass
+
     def update(self):
+        self.update_visuals()
         if self.player is None:
             for player in common.current_state.players:
                 if self.rect.collidepoint(player.rect.center) and player.aligned:
@@ -322,6 +341,10 @@ class GasCan(pygame.sprite.Sprite):
         for nx, ny in list(common.current_state.squares.get_neighbors((x, y), True)):
             common.current_state.sprites.add(Explosion((nx * 8, ny * 8)))
 
+    def update_visuals(self):
+        self.anim.update()
+        self.image = self.anim.image
+
     def update(self):
         if self.state == "idle":
             if self.player is None:
@@ -339,8 +362,7 @@ class GasCan(pygame.sprite.Sprite):
             self.explosion_timer.update()
             if not self.explosion_timer.time_left:
                 self.explode()
-        self.anim.update()
-        self.image = self.anim.image
+        self.update_visuals()
 
     def use(self):
         self.rect.center = self.player.rect.center
@@ -358,6 +380,9 @@ class Barbwire(pygame.sprite.Sprite):
         self.image = self.images[self.live]
         self.owner = owner
 
+    def update_visuals(self):
+        self.image = self.images[self.live]
+
     def update(self):
         for player in common.current_state.players:
             if self.rect.collidepoint(player.rect.center) and player.aligned:
@@ -371,7 +396,7 @@ class Barbwire(pygame.sprite.Sprite):
             self.live_timer.update()
             if not self.live_timer.time_left:
                 self.kill()
-        self.image = self.images[self.live]
+        self.update_visuals()
 
 
 class Square(pygame.sprite.Sprite):
@@ -423,6 +448,15 @@ class Square(pygame.sprite.Sprite):
             self.owner = None
             self.image = self.images[self.team]
 
+    def update_visuals(self):
+        self.image = self.images[self.team].copy()
+        if self.occupant and self.teamchange_timer.time_left:
+            if self.occupant.team == settings.TEAM_1:
+                color = settings.TEAM1_COLOR
+            else:
+                color = settings.TEAM2_COLOR
+            pygame.draw.line(self.image, color, (0, 8), (0, round(self.teamchange_timer.decimal_percent_left * 8)))
+
     def update(self) -> None:
         self.teamchange_timer.update()
         # check if I collide with any players and change color to match
@@ -451,13 +485,7 @@ class Square(pygame.sprite.Sprite):
                 self.team_group.add(self)
                 self.owner.squares.remove(self)
         # change color
-        self.image = self.images[self.team].copy()
-        if self.occupant and self.teamchange_timer.time_left:
-            if self.occupant.team == settings.TEAM_1:
-                color = settings.TEAM1_COLOR
-            else:
-                color = settings.TEAM2_COLOR
-            pygame.draw.line(self.image, color, (0, 8), (0, round(self.teamchange_timer.decimal_percent_left * 8)))
+        self.update_visuals()
 
 
 class SquareSpriteGroup(pygame.sprite.Group):
