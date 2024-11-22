@@ -8,6 +8,10 @@ class Timer:
         self.time_left: float = amount
         self.max_time: float = amount
 
+    @property
+    def decimal_percent_left(self):
+        return self.time_left / self.max_time
+
     def update(self) -> float:
         self.time_left = max(self.time_left - common.dt, 0)
         return self.time_left

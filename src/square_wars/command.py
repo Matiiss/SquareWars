@@ -36,14 +36,14 @@ class Controller:
         pass
 
 
-class InputController(Controller):
+class InputControllerA(Controller):
     def __init__(
         self,
         up_key=pygame.K_w,
         down_key=pygame.K_s,
         left_key=pygame.K_a,
         right_key=pygame.K_d,
-        shoot_key=pygame.K_RSHIFT,
+        shoot_key=pygame.K_q,
     ):
         super().__init__()
         self.up_key = up_key
@@ -92,9 +92,21 @@ class InputController(Controller):
                     self.command_queue.put(Command(COMMAND_STOP_RIGHT))
 
 
+class InputControllerB(InputControllerA):
+    def __init__(self, 
+        up_key=pygame.K_i,
+        down_key=pygame.K_k,
+        left_key=pygame.K_j,
+        right_key=pygame.K_l,
+        shoot_key=pygame.K_u,
+        ):
+        super().__init__(up_key, down_key, left_key, right_key, shoot_key)
+
+
 class DumbAIController(Controller):
     def __init__(self):
         super().__init__()
+        self.random_latency = 8 # increasing this slows the AI down
         self.pathfind_queue = queue.Queue()
         self.initial_frame = True
         self.target_teams = {settings.TEAM_1, settings.TEAM_2, settings.TEAM_NONE}
@@ -175,7 +187,7 @@ class DumbAIController(Controller):
             self.initial_frame = False
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
-        if self.sprite.aligned and not self.sprite.speedup_timer.time_left:
+        if self.sprite.aligned and not self.sprite.speedup_timer.time_left and not random.randint(0, self.random_latency):
             go = True
             if not self.pathfind_queue.qsize():
                 go = self.pathfind()

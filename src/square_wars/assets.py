@@ -2,10 +2,13 @@ from pathlib import Path
 
 import pygame
 
+from . import settings
+
 ASSETS_DIR = Path("res")
 
 images: dict[str, pygame.Surface] = {}
 sfx: dict[str, pygame.mixer.Sound] = {}
+fonts: dict[str, pygame.font.Font] = {}
 
 
 def image_path(path, extension="png"):
@@ -26,6 +29,9 @@ def load_image(path):
 
 def load_sound(path, extension="wav"):
     return pygame.mixer.Sound(ASSETS_DIR / "sfx" / f"{path}.{extension}")
+
+def load_font(path, extension="ttf"):
+    return pygame.font.Font(ASSETS_DIR / f"{path}.{extension}", size=settings.FONT_SIZE)
 
 
 def set_sound_volume(value):
@@ -57,7 +63,9 @@ def load_assets():
             "ghost": load_image("ghost"),
             "gascan": load_image("gascan"),
             "explosion": load_image("explosion"),
-            "barbwire": load_image("barbwire")
+            "barbwire": load_image("barbwire"),
+            "ko": load_image("ko"),
+            "guiWoodBG": load_image("guiWoodBG"),
         }
     )
     sfx.update(
@@ -71,5 +79,11 @@ def load_assets():
             "whack": load_sound("whack"),
             "explosion": load_sound("explosion"),
             "speedup": load_sound("speedup"),
+        }
+    )
+    fonts.update(
+        {
+            "silkscreen": load_font("silkfont"),
+            "silkscreen-bold": load_font("silkfont-bold")
         }
     )

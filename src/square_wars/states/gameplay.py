@@ -8,7 +8,7 @@ from .. import command
 from .. import common
 from .. import animation
 from .. import assets
-from .. import timer
+from .. import timer, scoreboard, particles
 
 
 def center_point_collide(sprite1, sprite2):
@@ -19,13 +19,18 @@ class Bullet(pygame.sprite.Sprite):
     SPEED = 64
     def __init__(self, pos: tuple[int, int], direction: pygame.Vector2, owner: pygame.sprite.Sprite):
         super().__init__()
+        self.layer = 3
         self.image = pygame.Surface((1, 1))
         self.image.fill("#131313")
         self.rect = pygame.FRect(pos, (1, 1))
         self.velocity = direction.normalize() * self.SPEED
         self.owner = owner
+    
+    def update_visuals(self):
+        pass
 
     def update(self):
+        self.update_visuals()
         self.rect.center += self.velocity * common.dt
         for player in common.current_state.players:
             if player.rect.colliderect(self.rect) and player is not self.owner:
@@ -37,18 +42,25 @@ class Bullet(pygame.sprite.Sprite):
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 3
         self.rect = pygame.FRect(pos, (8, 8))
         self.anim = animation.NoLoopAnimation(animation.get_spritesheet(assets.images["explosion"]))
         self.image = self.anim.image
+        self.deadly_timer = timer.Timer(0.6)
 
-    def update(self):
+    def update_visuals(self):
         self.anim.update()
         self.image = self.anim.image
+
+    def update(self):
+        self.update_visuals()
+        self.deadly_timer.update()
         x, y = int(self.rect.x / 8), int(self.rect.y / 8)
         common.current_state.squares.get_sprite_by_coordinate(x, y).reset()
-        for player in common.current_state.players:
-            if self.rect.collidepoint(player.rect.center):
-                player.whack()
+        if self.deadly_timer.time_left:
+            for player in common.current_state.players:
+                if self.rect.collidepoint(player.rect.center):
+                    player.whack()
         if self.anim.done():
             self.kill()
 
@@ -60,6 +72,7 @@ class Player(pygame.sprite.Sprite):
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
+        self.layer = 3
         self.controller = controller
         self.team = team
         self.rect = pygame.FRect(0, 0, 8, 8)
@@ -77,6 +90,8 @@ class Player(pygame.sprite.Sprite):
         self.spawn_point = self.rect.topleft
         self.ghost_anim = animation.SingleAnimation(assets.images["ghost"])
         self.whacked = False
+        self.whacked_timer = timer.Timer(3)
+        self.particle_timer = timer.Timer(0.3)
         color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
             (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
@@ -90,8 +105,16 @@ class Player(pygame.sprite.Sprite):
         }
 
         self.controller.register_sprite(self)
-
         self.blank_image = pygame.Surface((0, 0))
+        self.target_teams = {
+            settings.TEAM_NONE,
+        }
+        if self.team == settings.TEAM_1:
+            self.target_teams.add(settings.TEAM_2)
+            self.particle_color = settings.TEAM1_COLOR
+        if self.team == settings.TEAM_2:
+            self.target_teams.add(settings.TEAM_1)
+            self.particle_color = settings.TEAM2_COLOR
 
     @property
     def facing(self):
@@ -102,7 +125,9 @@ class Player(pygame.sprite.Sprite):
     @property
     def image(self):
         if self.whacked:
-            return self.ghost_anim.image
+            image = self.ghost_anim.image.copy()
+            image.set_alpha(self.whacked_timer.decimal_percent_left * 255)
+            return image
         if self.speedup_timer.time_left and self.blink_on:
             return self.blank_image
         facing = self.moving
@@ -139,8 +164,31 @@ class Player(pygame.sprite.Sprite):
         if not self.whacked:
             assets.sfx["whack"].play()
             self.whacked = True
+            self.whacked_timer.restart()
+            common.current_state.kos[self.team] += 1
+            self.speedup_timer.end()
+            self.motion = [0, 0]
+
+    def update_visuals(self):
+        for anim in self.anim_dict.values():
+                anim.update()
+        self.ghost_anim.update()
+        self.particle_timer.update()
+        if not self.whacked and pygame.Vector2(self.moving) and not self.particle_timer.time_left:
+            self.particle_timer.restart()
+            lower_bound = 5
+            upper_bound = 6
+            if self.speedup_timer.time_left:
+                lower_bound = 13
+                upper_bound = 17
+            for particle in particles.particle_splash(
+                self.rect.center, self.layer - 1, self.particle_color, random.randint(lower_bound, upper_bound),
+            ):
+                common.current_state.sprites.add(particle)
+
 
     def update(self) -> None:
+        self.update_visuals()
         if not self.whacked:
             # Do command reading in 2 stages
             # Stage 1: realtime, cache non-realtime commands
@@ -186,8 +234,6 @@ class Player(pygame.sprite.Sprite):
             if self.speedup_timer.time_left:
                 speed = self.SPEEDY_SPEED
             # state handling for visuals
-            for anim in self.anim_dict.values():
-                anim.update()
             if self.moving != last_moving and pygame.Vector2(last_moving):
                 self.last_moving = last_moving
             # actual motion
@@ -226,9 +272,10 @@ class Player(pygame.sprite.Sprite):
                 self.blink_timer.restart()
                 self.blink_on = not self.blink_on
         else:
+            self.whacked_timer.update()
             self.ghost_anim.update()
             self.rect.topleft = pygame.Vector2(self.rect.topleft).move_towards(self.spawn_point, self.GHOST_SPEED * common.dt)
-            if self.rect.topleft == self.spawn_point:
+            if self.rect.topleft == self.spawn_point and not self.whacked_timer.time_left:
                 self.ghost_anim.restart()
                 self.whacked = False
 
@@ -236,6 +283,7 @@ class Player(pygame.sprite.Sprite):
 class Speedup(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 2
         self.rect = pygame.FRect(pos, (8, 8))
         x, y = int(pos[0] / 8), int(pos[1] / 8)
         anim_dict = {
@@ -260,9 +308,15 @@ class Speedup(pygame.sprite.Sprite):
             self.direction, self.anim = tuple(anim_dict.values())[0]
         self.image = self.anim.image
 
-    def update(self):
+    def unused(self):
+        return True  # use kills it
+
+    def update_visuals(self):
         self.anim.update()
         self.image = self.anim.image
+
+    def update(self):
+        self.update_visuals()
         for player in common.current_state.players:
             if self.rect.collidepoint(player.rect.center) and player.aligned:
                 assets.sfx["speedup"].play()
@@ -273,11 +327,19 @@ class Speedup(pygame.sprite.Sprite):
 class ShotGun(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 4
         self.image = assets.images["gun"]
         self.rect = pygame.Rect(pos, (8, 8))
         self.player = None
 
+    def unused(self):
+        return self.player is None
+
+    def update_visuals(self):
+        pass
+
     def update(self):
+        self.update_visuals()
         if self.player is None:
             for player in common.current_state.players:
                 if self.rect.collidepoint(player.rect.center) and player.aligned:
@@ -285,10 +347,7 @@ class ShotGun(pygame.sprite.Sprite):
                     self.player = player
                     assets.sfx["pickup"].play()
         else:
-            if self.player.rect.top < 8:
-                self.rect.center = self.player.rect.midbottom
-            else:
-                self.rect.center = self.player.rect.midtop
+            self.rect.center = self.player.rect.midbottom
 
     def use(self):
         assets.sfx["gunshot"].play()
@@ -300,6 +359,7 @@ class ShotGun(pygame.sprite.Sprite):
 class GasCan(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.layer = 4
         frames = animation.get_spritesheet(assets.images["gascan"])
         self.anim_dict = {
             "idle": animation.SingleAnimation(frames[0]),
@@ -312,14 +372,21 @@ class GasCan(pygame.sprite.Sprite):
         self.state = "idle"
         self.player = None
 
+    def unused(self):
+        return self.player is None
+
     def explode(self):
         assets.sfx["explosion"].play()
         self.kill()
         x, y = int(self.rect.left / 8), int(self.rect.top / 8)
-        common.current_state.sprites.add(Explosion(self.rect.topleft))
-        for nx, ny in common.current_state.squares.get_neighbors((x, y), True):
-            print(nx, ny)
+        if common.current_state.squares.is_clear_position(x, y):
+            common.current_state.sprites.add(Explosion((x * 8, y * 8)))
+        for nx, ny in list(common.current_state.squares.get_neighbors((x, y), True)):
             common.current_state.sprites.add(Explosion((nx * 8, ny * 8)))
+
+    def update_visuals(self):
+        self.anim.update()
+        self.image = self.anim.image
 
     def update(self):
         if self.state == "idle":
@@ -330,16 +397,12 @@ class GasCan(pygame.sprite.Sprite):
                         player.set_powerup(self)
                         self.player = player
             else:
-                if self.player.rect.top < 8:
-                    self.rect.center = self.player.rect.midbottom
-                else:
-                    self.rect.center = self.player.rect.midtop
+                self.rect.center = self.player.rect.midtop
         else:
             self.explosion_timer.update()
             if not self.explosion_timer.time_left:
                 self.explode()
-        self.anim.update()
-        self.image = self.anim.image
+        self.update_visuals()
 
     def use(self):
         self.rect.center = self.player.rect.center
@@ -350,12 +413,19 @@ class GasCan(pygame.sprite.Sprite):
 class Barbwire(pygame.sprite.Sprite):
     def __init__(self, position: tuple[int, int], owner=None):
         super().__init__()
+        self.layer = 4
         self.live_timer = timer.Timer(7)
         self.rect = pygame.Rect(position, (8, 8))
         self.images = animation.get_spritesheet(assets.images["barbwire"])
         self.live = owner is not None
         self.image = self.images[self.live]
         self.owner = owner
+
+    def unused(self):
+        return not self.live
+
+    def update_visuals(self):
+        self.image = self.images[self.live]
 
     def update(self):
         for player in common.current_state.players:
@@ -370,7 +440,7 @@ class Barbwire(pygame.sprite.Sprite):
             self.live_timer.update()
             if not self.live_timer.time_left:
                 self.kill()
-        self.image = self.images[self.live]
+        self.update_visuals()
 
 
 class Square(pygame.sprite.Sprite):
@@ -384,6 +454,7 @@ class Square(pygame.sprite.Sprite):
         start_team: settings.TEAM_NONE,
     ):
         super().__init__()
+        self.layer = 1
         self.rect = pygame.FRect(0, 0, 8, 8)
         self.rect.topleft = pos
         self.player_group = player_group
@@ -405,8 +476,8 @@ class Square(pygame.sprite.Sprite):
                     settings.TEAM_NONE,
                     settings.TEAM_1,
                     settings.TEAM_2,
-                    settings.TEAM_2_SPAWN,
                     settings.TEAM_1_SPAWN,
+                    settings.TEAM_2_SPAWN,
                 ),
                 animation.get_spritesheet(assets.images["tileset"]),
             )
@@ -417,9 +488,19 @@ class Square(pygame.sprite.Sprite):
         self._y = 0
 
     def reset(self):
-        self.team = settings.TEAM_NONE
-        self.owner = None
-        self.image = self.images[self.team]
+        if self.team in {settings.TEAM_NONE, settings.TEAM_1, settings.TEAM_2}:
+            self.team = settings.TEAM_NONE
+            self.owner = None
+            self.image = self.images[self.team]
+
+    def update_visuals(self):
+        self.image = self.images[self.team].copy()
+        if self.occupant and self.teamchange_timer.time_left:
+            if self.occupant.team == settings.TEAM_1:
+                color = settings.TEAM1_COLOR
+            else:
+                color = settings.TEAM2_COLOR
+            pygame.draw.line(self.image, color, (0, 8), (0, round(self.teamchange_timer.decimal_percent_left * 8)))
 
     def update(self) -> None:
         self.teamchange_timer.update()
@@ -449,7 +530,7 @@ class Square(pygame.sprite.Sprite):
                 self.team_group.add(self)
                 self.owner.squares.remove(self)
         # change color
-        self.image = self.images[self.team]
+        self.update_visuals()
 
 
 class SquareSpriteGroup(pygame.sprite.Group):
@@ -497,8 +578,10 @@ class Gameplay:
         self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
         # sprite groups
-        self.sprites = pygame.sprite.Group()
+        self.sprites = pygame.sprite.LayeredUpdates()
         self.players = pygame.sprite.Group()
+        self.hud = pygame.sprite.Group()
+        self.added_scoreboard = False
         # handles squares as a graph of neighbouring sprites for BFS
         self.squares = SquareSpriteGroup()
         self.blanks = pygame.sprite.Group()
@@ -506,13 +589,13 @@ class Gameplay:
         self.team_two_squares = pygame.sprite.Group()
         # decide on rock placement
         rocks = set()
-        no_rock_spots = {(0, 0), (7, 7)}
+        self.used_spots = {(0, 0), (7, 7)}
         for _ in range(6):
             nx, ny = random.randint(0, 7), random.randint(0, 7)
-            if (nx, ny) in no_rock_spots:
+            if (nx, ny) in self.used_spots:
                 continue
             rocks.add((nx, ny))
-            no_rock_spots.add((nx, ny))
+            self.used_spots.add((nx, ny))
         # spawn grid
         for x in range(0, 8):
             for y in range(0, 8):
@@ -528,19 +611,35 @@ class Gameplay:
                 )
                 self.sprites.add(sprite)
                 self.squares.add_to_grid(sprite, x, y)
-        # spawn bot player
-        controller = command.DumbAIController()
-        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_1)
+        # spawn human player
+        controller = command.InputControllerA()
+        player = Player(controller, (0, 0), settings.TEAM_1)
         self.sprites.add(player)
         self.players.add(player)
-        # spawn human player
-        controller = command.InputController()
-        player = Player(controller, (0, 0), settings.TEAM_2)
+        # spawn bot player
+        controller = command.DumbAIController()
+        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_2)
         self.sprites.add(player)
         self.players.add(player)
         # play ost
         pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
         pygame.mixer.music.play()
+        self.kos = {
+            settings.TEAM_1: 0,
+            settings.TEAM_2: 0,
+        }
+        # handles exit
+        self.dead = False
+
+    def get_square_count(self, team):
+        count = 0
+        for square in self.squares.sprites():
+            if square.team == team:
+                count += 1
+        return count
+
+    def get_ko_count(self, team):
+        return self.kos[team]
 
     def update(self) -> None:
         if self.timer.time_left:
@@ -551,12 +650,21 @@ class Gameplay:
                 self.powerup_timer.restart()
                 while True:
                     spot = (random.randint(0, 7), random.randint(0, 7))
-                    if self.squares.is_clear_position(*spot):
+                    if spot not in self.used_spots and self.squares.is_clear_position(*spot):
                         break
-                self.sprites.add(random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8)))
+                powerup = random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8))
+                self.used_spots.add(spot)
+                self.sprites.add(powerup)
+        elif not self.added_scoreboard:
+            self.hud.add(scoreboard.ScoreBoard(self))
+            self.added_scoreboard = True
+        self.hud.update()
 
-    def draw(self) -> None:
-        self.sprites.draw(common.screen)
+    def draw(self, surface=None) -> None:
+        if surface is None:
+            surface = common.screen
+        self.sprites.draw(surface)
+        self.hud.draw(surface)
 
     def transition_init(self) -> None:
         # hax
