@@ -84,6 +84,7 @@ class Player(pygame.sprite.Sprite):
         self.spawn_point = self.rect.topleft
         self.ghost_anim = animation.SingleAnimation(assets.images["ghost"])
         self.whacked = False
+        self.whacked_timer = timer.Timer(3)
         color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
             (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
@@ -109,7 +110,9 @@ class Player(pygame.sprite.Sprite):
     @property
     def image(self):
         if self.whacked:
-            return self.ghost_anim.image
+            image = self.ghost_anim.image.copy()
+            image.set_alpha(self.whacked_timer.decimal_percent_left * 255)
+            return image
         if self.speedup_timer.time_left and self.blink_on:
             return self.blank_image
         facing = self.moving
@@ -146,7 +149,10 @@ class Player(pygame.sprite.Sprite):
         if not self.whacked:
             assets.sfx["whack"].play()
             self.whacked = True
+            self.whacked_timer.restart()
             common.current_state.kos[self.team] += 1
+            self.speedup_timer.end()
+            self.motion = [0, 0]
 
     def update_visuals(self):
         for anim in self.anim_dict.values():
@@ -239,9 +245,10 @@ class Player(pygame.sprite.Sprite):
                 self.blink_timer.restart()
                 self.blink_on = not self.blink_on
         else:
+            self.whacked_timer.update()
             self.ghost_anim.update()
             self.rect.topleft = pygame.Vector2(self.rect.topleft).move_towards(self.spawn_point, self.GHOST_SPEED * common.dt)
-            if self.rect.topleft == self.spawn_point:
+            if self.rect.topleft == self.spawn_point and not self.whacked_timer.time_left:
                 self.ghost_anim.restart()
                 self.whacked = False
 
