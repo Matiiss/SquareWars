@@ -8,7 +8,7 @@ from .. import command
 from .. import common
 from .. import animation
 from .. import assets
-from .. import timer, scoreboard
+from .. import timer, scoreboard, particles
 
 
 def center_point_collide(sprite1, sprite2):
@@ -91,6 +91,7 @@ class Player(pygame.sprite.Sprite):
         self.ghost_anim = animation.SingleAnimation(assets.images["ghost"])
         self.whacked = False
         self.whacked_timer = timer.Timer(3)
+        self.particle_timer = timer.Timer(0.3)
         color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
             (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
@@ -104,8 +105,16 @@ class Player(pygame.sprite.Sprite):
         }
 
         self.controller.register_sprite(self)
-
         self.blank_image = pygame.Surface((0, 0))
+        self.target_teams = {
+            settings.TEAM_NONE,
+        }
+        if self.team == settings.TEAM_1:
+            self.target_teams.add(settings.TEAM_2)
+            self.particle_color = settings.TEAM1_COLOR
+        if self.team == settings.TEAM_2:
+            self.target_teams.add(settings.TEAM_1)
+            self.particle_color = settings.TEAM2_COLOR
 
     @property
     def facing(self):
@@ -164,6 +173,18 @@ class Player(pygame.sprite.Sprite):
         for anim in self.anim_dict.values():
                 anim.update()
         self.ghost_anim.update()
+        self.particle_timer.update()
+        if not self.whacked and pygame.Vector2(self.moving) and not self.particle_timer.time_left:
+            self.particle_timer.restart()
+            lower_bound = 5
+            upper_bound = 6
+            if self.speedup_timer.time_left:
+                lower_bound = 13
+                upper_bound = 17
+            for particle in particles.particle_splash(
+                self.rect.center, self.layer - 1, self.particle_color, random.randint(lower_bound, upper_bound),
+            ):
+                common.current_state.sprites.add(particle)
 
 
     def update(self) -> None:
