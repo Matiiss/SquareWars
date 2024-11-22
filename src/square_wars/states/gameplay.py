@@ -613,9 +613,11 @@ class Gameplay:
             self.added_scoreboard = True
         self.hud.update()
 
-    def draw(self) -> None:
-        self.sprites.draw(common.screen)
-        self.hud.draw(common.screen)
+    def draw(self, surface=None) -> None:
+        if surface is None:
+            surface = common.screen
+        self.sprites.draw(surface)
+        self.hud.draw(surface)
 
     def transition_init(self) -> None:
         # hax
