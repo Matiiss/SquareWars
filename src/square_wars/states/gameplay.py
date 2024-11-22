@@ -321,10 +321,7 @@ class ShotGun(pygame.sprite.Sprite):
                     self.player = player
                     assets.sfx["pickup"].play()
         else:
-            if self.player.rect.top < 8:
-                self.rect.center = self.player.rect.midbottom
-            else:
-                self.rect.center = self.player.rect.midtop
+            self.rect.center = self.player.rect.midbottom
 
     def use(self):
         assets.sfx["gunshot"].play()
@@ -373,10 +370,7 @@ class GasCan(pygame.sprite.Sprite):
                         player.set_powerup(self)
                         self.player = player
             else:
-                if self.player.rect.top < 8:
-                    self.rect.center = self.player.rect.midbottom
-                else:
-                    self.rect.center = self.player.rect.midtop
+                self.rect.center = self.player.rect.midtop
         else:
             self.explosion_timer.update()
             if not self.explosion_timer.time_left:
