@@ -26,7 +26,7 @@ class ScoreBoard(pygame.sprite.Sprite):
     @property
     def text(self):
         if self.true_text is not None:
-            return self.true_text
+            return self.true_text + '\n'
         team1_squares = self.gameplay_state.get_square_count(settings.TEAM_1)
         team1_kos = self.gameplay_state.get_ko_count(settings.TEAM_1)
         team2_squares = self.gameplay_state.get_square_count(settings.TEAM_2)
@@ -36,7 +36,11 @@ class ScoreBoard(pygame.sprite.Sprite):
  {team1_squares:02d}{settings.TEAM1_TILE_CHAR}-{team1_kos:02d}{settings.TEAM1_KO_CHAR}
 {settings.MR2_CHAR}={team2_squares - team2_kos:02d}
  {team2_squares:02d}{settings.TEAM2_TILE_CHAR}-{team2_kos:02d}{settings.TEAM2_KO_CHAR}
-        """[1:]
+ """[1:]
+
+    @property
+    def done(self):
+        return self.leaving and not self.down_timer.time_left
 
     def update(self):
         super().update()
@@ -58,5 +62,3 @@ class ScoreBoard(pygame.sprite.Sprite):
             if event.type in {pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN} and not self.live_timer.time_left:
                 self.leaving = True
                 self.down_timer.restart()
-        if self.leaving and not self.down_timer.time_left:
-            raise NotImplementedError("Matt make a nice transition back into main menu here pls!")
