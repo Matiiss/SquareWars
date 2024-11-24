@@ -16,7 +16,7 @@ class ScoreBoard(pygame.sprite.Sprite):
         self.image = self.bg_image.copy()
         self.inc_timer = timer.Timer(0.1)
         self.down_timer = timer.Timer(1)
-        self.live_timer = timer.Timer(5)
+        self.live_timer = timer.Timer(1)
         self.gameplay_state = gameplay_state
         self.rect = pygame.Rect(0, -64, 64, 64)
         self.leaving = False
