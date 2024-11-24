@@ -1,7 +1,9 @@
 import time
 from typing import Any
 
-import pygame, random, math
+import pygame
+import random
+import math
 
 from .. import common, assets, ui, utils, easings, timer
 
@@ -127,10 +129,21 @@ class MainMenu:
         speed = 150
         self.ui_manager.selector_arrow.rect.x -= speed * common.dt
 
+        self.sprites.update()
+        # self.ui_manager.update()
+        self.smoke_timer.update()
+        if not self.smoke_timer.time_left:
+            position = ((7, 37), (61, 51))[self.pos_index]
+            if random.randint(0, 2):
+                self.pos_index = not self.pos_index
+            self.sprites.add(Smoke(position))
+            self.smoke_timer = timer.Timer(random.random() * 0.5 + 0.5)
+
     def transition_draw(self, dst: pygame.Surface) -> None:
         surf = dst.copy()
         surf.fill(self.mmm)
         surf.blit(self.bg_image, (0, 0))
+        self.sprites.draw(surf)
         surf.blit(self.ui_manager["menu_title"].image, self.ui_manager["menu_title"].rect)
         surf.set_alpha(self.ui_manager["menu_title"].alpha)
         dst.blit(surf)
@@ -156,7 +169,7 @@ class MainMenu:
                 + 0.00776 * x**0
             )
 
-        dist = 100
+        dist = 50
         time_s = 1
 
         p_button = self.ui_manager["play_button"]
