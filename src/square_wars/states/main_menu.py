@@ -52,6 +52,8 @@ class MainMenu:
     caption_string = "Main Menu"
 
     def __init__(self):
+        pygame.mixer.music.load(assets.ost_path("SquareWars"))
+        pygame.mixer.music.play()
         self.ui_manager = ui.UIManager()
         self.sprites = pygame.sprite.Group()
         self.sprites.add(Cloud(position=(0, 8)))
