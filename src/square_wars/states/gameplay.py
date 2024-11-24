@@ -3,7 +3,7 @@ import random
 import pygame
 from collections.abc import Iterator
 
-from .. import timer, scoreboard, particles, assets, animation, common, command, settings, utils
+from .. import timer, scoreboard, particles, assets, animation, common, command, settings, utils, level
 
 
 def center_point_collide(sprite1, sprite2):
