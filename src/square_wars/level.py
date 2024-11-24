@@ -28,12 +28,12 @@ TUTORIAL = Level(
     ai_dumbness=25,
     world="""
 1.......
-........
-....#...
+......%.
+....#%%.
 ........
 .#......
-...#....
-........
+...#.%..
+.%......
 ..#....2
 """
 )
@@ -46,11 +46,11 @@ TUTORIAL_GUN = Level(
 1.......
 ..#...#.
 #.......
-..###...
-...###..
+..#.#%..
+...#%#..
 .......#
-.#...#..
-.......2
+.#...#%%
+......%2
 """
 )
 
@@ -119,11 +119,65 @@ DARK = Level(
 fov=True
 )
 
+BOMBERMAN = Level(
+    remark="Only\nBOMBS\nremain...",
+    powerups=(POWERUP_GASCAN,),
+    ai_dumbness=0,
+    world="""
+1%.%.%.%
+%.%.%.%.
+.%.%.%.%
+%.%.%.%.
+.%.%.%.%
+%.%.%.%.
+.%.%.%.%
+%.%.%.%2
+""",
+fov=True
+)
+
+TIME_TRIALS = Level(
+    remark="Are you\nFAST\nenough?",
+    powerups=(POWERUP_GUN,),
+    ai_dumbness=2,
+    world="""
+1#......
+.#.####.
+...#....
+###.....
+.....###
+....#...
+.####.#.
+......#2
+"""
+)
+
+DEATH = Level(
+    remark="You won't\nbeat\nthis.",
+    powerups=(POWERUP_SPEEDUP, POWERUP_BARBWIRE, POWERUP_GASCAN, POWERUP_GUN),
+    ai_dumbness=15,
+    world="""
+1......2
+.##%%##.
+.#....#.
+.%....%.
+.%....%.
+.#....#.
+.##%%##.
+2......2
+"""
+)
+
 LEVELS = (
-    DARK,
+    TIME_TRIALS,
+)
+(
     TUTORIAL,
     TUTORIAL_GUN,
     TUTORIAL_GASCAN,
     TWO_OPPONENT,
     DUEL,
+    DARK,
+    BOMBERMAN,
+    TIME_TRIALS,
 )

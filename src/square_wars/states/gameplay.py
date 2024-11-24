@@ -487,6 +487,7 @@ class Square(pygame.sprite.DirtySprite):
                     settings.TEAM_2,
                     settings.TEAM_1_SPAWN,
                     settings.TEAM_2_SPAWN,
+                    settings.TEAM_GRAVEL,
                 ),
                 utils.get_sprite_sheet(assets.images["tileset"]),
                 strict=False,
@@ -516,7 +517,7 @@ class Square(pygame.sprite.DirtySprite):
         self.teamchange_timer.update()
         # check if I collide with any players and change color to match
         changed = False
-        if self.team not in {settings.TEAM_ROCK, settings.TEAM_1_SPAWN, settings.TEAM_2_SPAWN}:
+        if self.team not in {settings.TEAM_GRAVEL, settings.TEAM_ROCK, settings.TEAM_1_SPAWN, settings.TEAM_2_SPAWN}:
             if self.occupant is not None:
                 if not self.rect.collidepoint(self.occupant.rect.center):
                     self.occupant = None
@@ -580,6 +581,7 @@ class SquareSpriteGroup(pygame.sprite.Group):
             settings.TEAM_1,
             settings.TEAM_2,
             settings.TEAM_NONE,
+            settings.TEAM_GRAVEL,
         }
 
 
@@ -614,6 +616,9 @@ class Gameplay:
     STATE_GAMEPLAY = 2
     STATE_END = 3
     STATE_PAUSE = 4
+    STATE_VICTORY = 5
+    STATE_DEFEAT = 6
+
     POWERUPS = {
         level.POWERUP_SPEEDUP: Speedup,
         level.POWERUP_GASCAN: GasCan,
@@ -631,6 +636,7 @@ class Gameplay:
         # handles level switch
         self.state = self.STATE_START
         self.scoreboard = None
+        self.total_score = 0
         # sets a bunch of variables
         self.reset()
 
@@ -668,6 +674,8 @@ class Gameplay:
                     continue
                 case level.CHAR_ROCK:
                     team = settings.TEAM_ROCK
+                case level.CHAR_GRAVEL:
+                    team = settings.TEAM_GRAVEL
                 case level.CHAR_BLANK:
                     team = settings.TEAM_NONE
                 case level.CHAR_T1:
@@ -690,7 +698,6 @@ class Gameplay:
             )
             self.sprites.add(sprite)
             self.squares.add_to_grid(sprite, x, y)
-            print(char, x, y, team)
             x += 1
         # set game values
         self.kos = {
@@ -709,6 +716,9 @@ class Gameplay:
         common.current_state = self
         self.sprites.update()
         common_current_state = state
+
+    def get_winner(self):
+        return list(sorted((settings.TEAM_1, settings.TEAM_2), key=lambda x: self.get_square_count(x) - self.get_ko_count(x)))[-1]
 
     def get_square_count(self, team):
         count = 0
@@ -738,7 +748,7 @@ class Gameplay:
             self.sprites.update()
             self.caption_string = f"TIME: {int(self.timer.update()):02d}"
             self.powerup_timer.update()
-            if not self.powerup_timer.time_left:
+            if (not self.powerup_timer.time_left) and self.level.powerups:
                 self.powerup_timer.restart()
                 while True:
                     spot = (random.randint(0, 7), random.randint(0, 7))
@@ -755,17 +765,26 @@ class Gameplay:
                 self.state = self.STATE_GAMEPLAY
                 pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
                 pygame.mixer.music.play()
-                self.scoreboard.kill()
-                self.scoreboard = None
         elif self.state == self.STATE_END:
             if self.scoreboard.done:
                 self.level_index += 1
-                if self.level_index == len(level.LEVELS):
-                    raise NotImplementedError("We don't have an ending yet.")
-                self.reset()
+                self.total_score += self.get_square_count(settings.TEAM_1) - self.get_ko_count(settings.TEAM_1)
+                if self.get_winner() != settings.TEAM_1:
+                    self.state = self.STATE_DEFEAT
+                    self.scoreboard = scoreboard.ScoreBoard(self, f"Failure.\n{self.total_score}pts")
+                    self.hud.add(self.scoreboard)
+                elif self.level_index >= len(level.LEVELS):
+                    self.state = self.STATE_VICTORY
+                    self.scoreboard = scoreboard.ScoreBoard(self, f"Victory!\n{self.total_score}pts")
+                    self.hud.add(self.scoreboard)
+                else:
+                    self.reset()
         elif self.state == self.STATE_PAUSE:
             if self.scoreboard.done:
                 self.unpause()
+        elif self.state in {self.STATE_VICTORY, self.STATE_DEFEAT}:
+            if self.scoreboard.done:
+                raise NotImplementedError("Matt go back to the main menu somehow.")
         self.hud.update()
 
     def draw(self, surface=None) -> None:
