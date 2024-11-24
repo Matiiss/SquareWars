@@ -103,7 +103,7 @@ DUEL = Level(
 )
 
 DARK = Level(
-    remark="Lights\nOut!",
+    remark="Night\nFalls...",
     powerups=(POWERUP_TORCH, POWERUP_BARBWIRE, POWERUP_GUN),
     ai_dumbness=10,
     world="""
