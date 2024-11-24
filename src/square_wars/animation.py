@@ -1,32 +1,4 @@
-import functools
-
-import pygame
-
-from . import common
-
-
-@functools.cache
-def flip_surface(surface, flip_x, flip_y):
-    if flip_x:
-        surface = pygame.transform.flip(surface, True, False)
-    if flip_y:
-        surface = pygame.transform.flip(surface, False, True)
-    return surface
-
-
-def get_spritesheet(surface, size=(8, 8)):
-    rect = pygame.Rect(0, 0, size[0], size[1])
-    size_rect = surface.get_rect()
-    images = []
-    while True:
-        images.append(surface.subsurface(rect).copy())
-        rect.left += size[0]
-        if not size_rect.contains(rect):
-            rect.left = 0
-            rect.top += size[1]
-        if not size_rect.contains(rect):
-            break
-    return images
+from . import common, utils
 
 
 class Animation:
@@ -46,7 +18,7 @@ class Animation:
     @property
     def image(self):
         image = self.frames[round(self.time / self.speed) % len(self.frames)]
-        return flip_surface(image, self.flip_x, self.flip_y)
+        return utils.flip_surface(image, self.flip_x, self.flip_y)
 
 
 class NoLoopAnimation:
@@ -69,7 +41,7 @@ class NoLoopAnimation:
     @property
     def image(self):
         frame_index = min(round(self.time / self.speed), len(self.frames) - 1)
-        return flip_surface(self.frames[frame_index], self.flip_x, self.flip_y)
+        return utils.flip_surface(self.frames[frame_index], self.flip_x, self.flip_y)
 
 
 class SingleAnimation:
@@ -86,4 +58,4 @@ class SingleAnimation:
 
     @property
     def image(self):
-        return flip_surface(self.surface, self.flip_x, self.flip_y)
+        return utils.flip_surface(self.surface, self.flip_x, self.flip_y)
