@@ -634,6 +634,16 @@ class Gameplay:
         # sets a bunch of variables
         self.reset()
 
+    def pause(self):
+        self.state = self.STATE_PAUSE
+        pygame.mixer.music.pause()
+        self.scoreboard = scoreboard.ScoreBoard(self, f"PAUSED\nTime:{int(self.timer.time_left):02d}")
+        self.hud.add(self.scoreboard)
+
+    def unpause(self):
+        self.state = self.STATE_GAMEPLAY
+        pygame.mixer.music.unpause()
+
     def reset(self):
         self.level = level.LEVELS[self.level_index]
         # sprite groups
@@ -737,6 +747,9 @@ class Gameplay:
                 powerup = self.POWERUPS[random.choice(self.level.powerups)]((spot[0] * 8, spot[1] * 8))
                 self.sprites.add(powerup)
                 self.powerups.add(powerup)
+            for event in common.events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+                    self.pause()
         elif self.state == self.STATE_START:
             if self.scoreboard.done:
                 self.state = self.STATE_GAMEPLAY
@@ -750,6 +763,9 @@ class Gameplay:
                 if self.level_index == len(level.LEVELS):
                     raise NotImplementedError("We don't have an ending yet.")
                 self.reset()
+        elif self.state == self.STATE_PAUSE:
+            if self.scoreboard.done:
+                self.unpause()
         self.hud.update()
 
     def draw(self, surface=None) -> None:

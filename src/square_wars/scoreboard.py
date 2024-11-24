@@ -60,6 +60,6 @@ class ScoreBoard(pygame.sprite.Sprite):
         self.image = self.bg_image.copy()
         self.image.blit(self.renderer.image, rect)
         for event in common.events:
-            if event.type in {pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN} and not self.live_timer.time_left:
+            if event.type in {pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN} and not self.live_timer.time_left and not self.leaving:
                 self.leaving = True
                 self.down_timer.restart()
