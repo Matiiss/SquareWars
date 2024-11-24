@@ -3,8 +3,7 @@ from typing import Any
 
 import pygame, random, math
 
-from .. import common, assets, ui, event_types, animation, timer
-from .. import common, assets, ui, utils, easings
+from .. import common, assets, ui, utils, easings, timer
 
 from .transition import Transition
 from .gameplay import Gameplay
@@ -12,9 +11,10 @@ from .gameplay import Gameplay
 
 class Cloud(pygame.sprite.Sprite):
     SPEED = 8
+
     def __init__(self, position):
         super().__init__()
-        self.image = random.choice(animation.get_spritesheet(assets.images["clouds"], (24, 16)))
+        self.image = random.choice(utils.get_sprite_sheet(assets.images["clouds"], (24, 16)))
         self.rect = pygame.FRect(position, (24, 16))
         self.ui = None
 
@@ -29,6 +29,7 @@ class Cloud(pygame.sprite.Sprite):
 
 class Smoke(pygame.sprite.Sprite):
     SPEED = 15
+
     def __init__(self, position):
         super().__init__()
         self.radius = random.randint(1, 2)
@@ -43,11 +44,10 @@ class Smoke(pygame.sprite.Sprite):
     def update(self):
         self.age += common.dt
         self.rect.top -= self.SPEED * common.dt
-        self.rect.x = math.sin(self.age * 2) * 3+ self.x
+        self.rect.x = math.sin(self.age * 2) * 3 + self.x
 
         if self.rect.bottom < 0:
             self.kill()
-
 
 
 class MainMenu:
@@ -76,7 +76,7 @@ class MainMenu:
             ui.Button(position=(16, 32), image=assets.images["settings_button"]), selector="settings_button"
         ).add_static(ui.Image(position=(8, 3), image=assets.images["menu_title"]), selector="menu_title")
 
-        self.bg_image = utils.nine_slice(utils.get_sprite_sheet(assets.images["guiWoodBG"]), (64, 64))
+        self.bg_image = assets.images["menu_bg"].copy()
         self.mmm = self.bg_image.get_at((1, 0))
 
         pygame.mixer.music.load(assets.ost_path("SquareWars"))
@@ -89,10 +89,7 @@ class MainMenu:
         self.ui_manager.update()
         self.smoke_timer.update()
         if not self.smoke_timer.time_left:
-            position = (
-            (7, 37),
-            (61, 51)
-            )[self.pos_index]
+            position = ((7, 37), (61, 51))[self.pos_index]
             if random.randint(0, 2):
                 self.pos_index = not self.pos_index
             self.sprites.add(Smoke(position))
@@ -105,7 +102,6 @@ class MainMenu:
 
         surface.fill(self.mmm)
         surface.blit(self.bg_image, (0, 0))
-        surface.blit(assets.images["menu_bg"], (0, 0))
         self.sprites.draw(surface)
         self.ui_manager.draw(surface)
 
@@ -198,7 +194,6 @@ class Easy:
             return
 
         time_fraction = elapsed_time_s / self.total_time_s
-        print(time_fraction)
         x = easings.scale(self.start_pos.x, self.end_pos.x, self.easing(time_fraction))
         y = easings.scale(self.start_pos.y, self.end_pos.y, self.easing(time_fraction))
         self.current_pos = pygame.Vector2(x, y)
