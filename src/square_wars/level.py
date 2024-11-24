@@ -14,7 +14,7 @@ CHAR_T2 = "2"
 CHAR_ROCK = "#"
 CHAR_GRAVEL = "%"
 
-@dataclass
+@dataclass(frozen=True)
 class Level:
     remark: str
     powerups: list
@@ -22,8 +22,8 @@ class Level:
     world: str
     fov: bool = False
     
-LEVEL_1 = Level(
-    remark="Move:\nWASD\nPause:\ne",
+TUTORIAL = Level(
+    remark="Move:\n WASD\nPause:\n e",
     powerups=(POWERUP_SPEEDUP,),
     ai_dumbness=25,
     world="""
@@ -38,7 +38,7 @@ LEVEL_1 = Level(
 """
 )
 
-LEVEL_2 = Level(
+TUTORIAL_GUN = Level(
     remark="Shoot:\nq\n",
     powerups=(POWERUP_SPEEDUP, POWERUP_GUN),
     ai_dumbness=20,
@@ -54,7 +54,76 @@ LEVEL_2 = Level(
 """
 )
 
+TUTORIAL_GASCAN = Level(
+    remark="Use a\nGAS CAN\nand run.\nBOOM!",
+    powerups=(POWERUP_GUN, POWERUP_GASCAN),
+    ai_dumbness=10,
+    world="""
+1.......
+........
+........
+........
+........
+........
+........
+.......2
+"""
+)
+
+TWO_OPPONENT = Level(
+    remark="One guy...\nToo easy.",
+    powerups=(POWERUP_GUN, POWERUP_GASCAN, POWERUP_SPEEDUP),
+    ai_dumbness=40,
+    world="""
+2.......
+#...###.
+........
+.#.#1...
+##.###.#.
+....#...
+.#.....#
+.#.....2
+"""
+)
+
+DUEL = Level(
+    remark="Unless...\nit's THIS\nguy!",
+    powerups=(POWERUP_GUN, POWERUP_SPEEDUP),
+    ai_dumbness=5,
+    world="""
+1.......
+.##..##.
+.#....#.
+...##...
+...##...
+.#....#.
+.##..##.
+.......2
+"""
+)
+
+DARK = Level(
+    remark="Lights\nOut!",
+    powerups=(POWERUP_TORCH, POWERUP_BARBWIRE, POWERUP_GUN),
+    ai_dumbness=10,
+    world="""
+1.......
+#.#.#.#.
+........
+.#.#.#.#
+........
+#.#.#.#.
+........
+.#.#.#2#
+""",
+fov=True
+)
+
 LEVELS = (
-    LEVEL_1,
-    LEVEL_2,
+    DARK,
+    TUTORIAL,
+    TUTORIAL_GUN,
+    TUTORIAL_GASCAN,
+    TWO_OPPONENT,
+    DUEL,
 )
