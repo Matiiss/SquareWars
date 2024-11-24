@@ -67,6 +67,7 @@ def load_assets():
             "barbwire": load_image("barbwire"),
             "ko": load_image("ko"),
             "guiWoodBG": load_image("guiWoodBG"),
+            "clouds": load_image("clouds")
         }
     )
     sfx.update(
