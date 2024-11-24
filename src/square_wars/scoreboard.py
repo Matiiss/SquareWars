@@ -2,6 +2,7 @@ import pygame
 
 from . import settings, timer, animation, assets, chunky, common
 
+
 def nine_slice(images, size):
     image = pygame.Surface(size).convert()
     image.fill("magenta")
@@ -37,8 +38,9 @@ def nine_slice(images, size):
 
 
 class ScoreBoard(pygame.sprite.Sprite):
-    def __init__(self, gameplay_state):
+    def __init__(self, gameplay_state, text=None):
         super().__init__()
+        self.true_text = text
         self.bg_image = nine_slice(animation.get_spritesheet(assets.images["guiWoodBG"]), (64, 64))
         title_image = assets.images["menu_title"]
         title_rect = title_image.get_rect()
@@ -57,6 +59,8 @@ class ScoreBoard(pygame.sprite.Sprite):
 
     @property
     def text(self):
+        if self.true_text is not None:
+            return self.true_text
         team1_squares = self.gameplay_state.get_square_count(settings.TEAM_1)
         team1_kos = self.gameplay_state.get_ko_count(settings.TEAM_1)
         team2_squares = self.gameplay_state.get_square_count(settings.TEAM_2)

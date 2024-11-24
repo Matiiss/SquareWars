@@ -30,6 +30,7 @@ def load_image(path):
 def load_sound(path, extension="wav"):
     return pygame.mixer.Sound(ASSETS_DIR / "sfx" / f"{path}.{extension}")
 
+
 def load_font(path, extension="ttf"):
     return pygame.font.Font(ASSETS_DIR / f"{path}.{extension}", size=settings.FONT_SIZE)
 
@@ -66,6 +67,7 @@ def load_assets():
             "barbwire": load_image("barbwire"),
             "ko": load_image("ko"),
             "guiWoodBG": load_image("guiWoodBG"),
+            "clouds": load_image("clouds")
         }
     )
     sfx.update(
@@ -81,9 +83,4 @@ def load_assets():
             "speedup": load_sound("speedup"),
         }
     )
-    fonts.update(
-        {
-            "silkscreen": load_font("silkfont"),
-            "silkscreen-bold": load_font("silkfont-bold")
-        }
-    )
+    fonts.update({"silkscreen": load_font("silkfont"), "silkscreen-bold": load_font("silkfont-bold")})

@@ -17,6 +17,7 @@ def center_point_collide(sprite1, sprite2):
 
 class Bullet(pygame.sprite.Sprite):
     SPEED = 64
+
     def __init__(self, pos: tuple[int, int], direction: pygame.Vector2, owner: pygame.sprite.Sprite):
         super().__init__()
         self.layer = 3
@@ -25,7 +26,7 @@ class Bullet(pygame.sprite.Sprite):
         self.rect = pygame.FRect(pos, (1, 1))
         self.velocity = direction.normalize() * self.SPEED
         self.owner = owner
-    
+
     def update_visuals(self):
         pass
 
@@ -36,7 +37,6 @@ class Bullet(pygame.sprite.Sprite):
             if player.rect.colliderect(self.rect) and player is not self.owner:
                 player.whack()
                 self.kill()
-
 
 
 class Explosion(pygame.sprite.Sprite):
@@ -171,7 +171,7 @@ class Player(pygame.sprite.Sprite):
 
     def update_visuals(self):
         for anim in self.anim_dict.values():
-                anim.update()
+            anim.update()
         self.ghost_anim.update()
         self.particle_timer.update()
         if not self.whacked and pygame.Vector2(self.moving) and not self.particle_timer.time_left:
@@ -182,10 +182,12 @@ class Player(pygame.sprite.Sprite):
                 lower_bound = 13
                 upper_bound = 17
             for particle in particles.particle_splash(
-                self.rect.center, self.layer - 1, self.particle_color, random.randint(lower_bound, upper_bound),
+                self.rect.center,
+                self.layer - 1,
+                self.particle_color,
+                random.randint(lower_bound, upper_bound),
             ):
                 common.current_state.sprites.add(particle)
-
 
     def update(self) -> None:
         self.update_visuals()
@@ -274,7 +276,9 @@ class Player(pygame.sprite.Sprite):
         else:
             self.whacked_timer.update()
             self.ghost_anim.update()
-            self.rect.topleft = pygame.Vector2(self.rect.topleft).move_towards(self.spawn_point, self.GHOST_SPEED * common.dt)
+            self.rect.topleft = pygame.Vector2(self.rect.topleft).move_towards(
+                self.spawn_point, self.GHOST_SPEED * common.dt
+            )
             if self.rect.topleft == self.spawn_point and not self.whacked_timer.time_left:
                 self.ghost_anim.restart()
                 self.whacked = False
@@ -566,7 +570,11 @@ class SquareSpriteGroup(pygame.sprite.Group):
         return (x, y) in self.grid
 
     def is_clear_position(self, x, y):
-        return self.has_at_position(x, y) and self.get_sprite_by_coordinate(x, y).team in {settings.TEAM_1, settings.TEAM_2, settings.TEAM_NONE}
+        return self.has_at_position(x, y) and self.get_sprite_by_coordinate(x, y).team in {
+            settings.TEAM_1,
+            settings.TEAM_2,
+            settings.TEAM_NONE,
+        }
 
 
 class Gameplay:

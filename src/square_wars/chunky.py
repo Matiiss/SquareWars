@@ -78,13 +78,17 @@ class LineBreak(Chunk):
 
 
 class TextChunk(Chunk):
-    def __init__(self, text, fonttype=0, fontname="silkscreen", fontsize=settings.FONT_SIZE, fontcolor='black', bgcolor=None):
+    def __init__(
+        self, text, fonttype=0, fontname="silkscreen", fontsize=settings.FONT_SIZE, fontcolor="black", bgcolor=None
+    ):
         self.font_data = {
-        f"silkscreen-{settings.FONT_SIZE}": FontHolder({
-            0: assets.fonts["silkscreen"],
-            FONTTYPE_BOLD: assets.fonts["silkscreen-bold"],
-        })
-    }
+            f"silkscreen-{settings.FONT_SIZE}": FontHolder(
+                {
+                    0: assets.fonts["silkscreen"],
+                    FONTTYPE_BOLD: assets.fonts["silkscreen-bold"],
+                }
+            )
+        }
         fontkey = f"{fontname}-{fontsize}"
         if fontkey in self.font_data:
             font = self.font_data[fontkey][fonttype]
@@ -167,7 +171,7 @@ def parse_chunky_text(text):
         settings.TEAM1_TILE_CHAR: assets.images["tileset"].subsurface((16, 0, 8, 8)),
         settings.TEAM2_TILE_CHAR: assets.images["tileset"].subsurface((24, 0, 8, 8)),
         settings.TEAM1_KO_CHAR: assets.images["ko"].subsurface((0, 0, 8, 8)),
-        settings.TEAM2_KO_CHAR: assets.images["ko"].subsurface((8, 0, 8, 8))
+        settings.TEAM2_KO_CHAR: assets.images["ko"].subsurface((8, 0, 8, 8)),
     }
     chunks = []
     current_chunk = ""
