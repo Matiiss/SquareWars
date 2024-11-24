@@ -1,46 +1,12 @@
 import pygame
 
-from . import settings, timer, animation, assets, chunky, common
-
-
-def nine_slice(images, size):
-    image = pygame.Surface(size).convert()
-    image.fill("magenta")
-    image.set_colorkey("magenta")
-    rect = pygame.Rect(0, 0, *size)
-    rects = [image.get_rect() for image in images]
-    middle_rect = rect.copy()
-    middle_rect.height -= rects[0].height + rects[6].height
-    middle_rect.width -= rects[0].width + rects[2].width
-    middle_rect.center = rect.center
-    image.blit(images[0], (0, 0))
-    image.blit(
-        pygame.transform.scale(images[1], (middle_rect.width, rects[1].height)),
-        (middle_rect.left, 0),
-    )
-    image.blit(images[2], (middle_rect.right, 0))
-    image.blit(
-        pygame.transform.scale(images[3], (rects[3].width, middle_rect.height)),
-        (0, middle_rect.top),
-    )
-    image.blit(pygame.transform.scale(images[4], middle_rect.size), middle_rect.topleft)
-    image.blit(
-        pygame.transform.scale(images[5], (rects[5].width, middle_rect.height)),
-        middle_rect.topright,
-    )
-    image.blit(images[6], (0, middle_rect.bottom))
-    image.blit(
-        pygame.transform.scale(images[7], (middle_rect.width, rects[7].height)),
-        middle_rect.bottomleft,
-    )
-    image.blit(images[8], middle_rect.bottomright)
-    return image
+from . import settings, timer, assets, chunky, common, utils
 
 
 class ScoreBoard(pygame.sprite.Sprite):
     def __init__(self, gameplay_state):
         super().__init__()
-        self.bg_image = nine_slice(animation.get_spritesheet(assets.images["guiWoodBG"]), (64, 64))
+        self.bg_image = utils.nine_slice(utils.get_sprite_sheet(assets.images["guiWoodBG"]), (64, 64))
         title_image = assets.images["menu_title"]
         title_rect = title_image.get_rect()
         title_rect.centerx = self.bg_image.get_width() / 2

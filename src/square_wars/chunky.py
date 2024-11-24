@@ -1,8 +1,6 @@
-import itertools
-
 import pygame
 
-from . import assets, settings, common, animation
+from . import assets, settings, animation, utils
 
 pygame.init()
 
@@ -166,8 +164,8 @@ class ChunkRenderer(pygame.sprite.Sprite):
 
 def parse_chunky_text(text):
     IMAGES = {
-        settings.MR1_CHAR: animation.Animation(animation.get_spritesheet(assets.images["Mr1"])),
-        settings.MR2_CHAR: animation.Animation(animation.get_spritesheet(assets.images["Mr2"])),
+        settings.MR1_CHAR: animation.Animation(utils.get_sprite_sheet(assets.images["Mr1"])),
+        settings.MR2_CHAR: animation.Animation(utils.get_sprite_sheet(assets.images["Mr2"])),
         settings.TEAM1_TILE_CHAR: assets.images["tileset"].subsurface((16, 0, 8, 8)),
         settings.TEAM2_TILE_CHAR: assets.images["tileset"].subsurface((24, 0, 8, 8)),
         settings.TEAM1_KO_CHAR: assets.images["ko"].subsurface((0, 0, 8, 8)),
