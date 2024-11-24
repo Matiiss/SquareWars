@@ -8,7 +8,7 @@ from .. import command
 from .. import common
 from .. import animation
 from .. import assets
-from .. import timer, scoreboard, particles
+from .. import timer, scoreboard, particles, level
 
 
 def center_point_collide(sprite1, sprite2):
@@ -349,6 +349,7 @@ class ShotGun(pygame.sprite.Sprite):
                 if self.rect.collidepoint(player.rect.center) and player.aligned:
                     player.set_powerup(self)
                     self.player = player
+                    common.current_state.powerups.remove(self)
                     assets.sfx["pickup"].play()
         else:
             self.rect.center = self.player.rect.midbottom
@@ -387,6 +388,7 @@ class GasCan(pygame.sprite.Sprite):
             common.current_state.sprites.add(Explosion((x * 8, y * 8)))
         for nx, ny in list(common.current_state.squares.get_neighbors((x, y), True)):
             common.current_state.sprites.add(Explosion((nx * 8, ny * 8)))
+        common.current_state.powerups.remove(self)
 
     def update_visuals(self):
         self.anim.update()
@@ -397,6 +399,7 @@ class GasCan(pygame.sprite.Sprite):
             if self.player is None:
                 for player in common.current_state.players:
                     if self.rect.collidepoint(player.rect.center) and player.aligned:
+                        common.current_state.powerups.remove(self)
                         assets.sfx["pickup"].play()
                         player.set_powerup(self)
                         self.player = player
@@ -409,6 +412,7 @@ class GasCan(pygame.sprite.Sprite):
         self.update_visuals()
 
     def use(self):
+        common.current_state.powerups.add(self)
         self.rect.center = self.player.rect.center
         self.anim = self.anim_dict["lit"]
         self.state = "lit"
@@ -578,15 +582,32 @@ class SquareSpriteGroup(pygame.sprite.Group):
 
 
 class Gameplay:
-    POWERUPS = (Speedup, ShotGun, GasCan, Barbwire)
+    STATE_START = 1
+    STATE_GAMEPLAY = 2
+    STATE_END = 3
+    STATE_PAUSE = 4
+    POWERUPS = {
+        level.POWERUP_SPEEDUP: Speedup,
+        level.POWERUP_GASCAN: GasCan,
+        level.POWERUP_GUN: ShotGun,
+        level.POWERUP_BARBWIRE: Barbwire,
+    }
 
     def __init__(self):
         # timer
         self.timer = timer.Timer(64)
         self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
+        # sets a bunch of variables
+        self.reset()
+        # handles level switch
+        self.state = self.STATE_START
+
+    def reset(self, level_index=0):
+        self.level = level.LEVELS[level_index]
         # sprite groups
         self.sprites = pygame.sprite.LayeredUpdates()
+        self.powerups = pygame.sprite.Group()
         self.players = pygame.sprite.Group()
         self.hud = pygame.sprite.Group()
         self.added_scoreboard = False
@@ -595,40 +616,38 @@ class Gameplay:
         self.blanks = pygame.sprite.Group()
         self.team_one_squares = pygame.sprite.Group()
         self.team_two_squares = pygame.sprite.Group()
-        # decide on rock placement
-        rocks = set()
-        self.used_spots = {(0, 0), (7, 7)}
-        for _ in range(6):
-            nx, ny = random.randint(0, 7), random.randint(0, 7)
-            if (nx, ny) in self.used_spots:
-                continue
-            rocks.add((nx, ny))
-            self.used_spots.add((nx, ny))
         # spawn grid
-        for x in range(0, 8):
-            for y in range(0, 8):
-                team = settings.TEAM_NONE
-                if (x, y) == (0, 0):
-                    team = settings.TEAM_1_SPAWN
-                if (x, y) == (7, 7):
-                    team = settings.TEAM_2_SPAWN
-                if (x, y) in rocks:
+        y = 0
+        x = 0
+        for char in self.level.world.strip():
+            match char:
+                case "\n":
+                    y += 1
+                    x = 0
+                    continue
+                case level.CHAR_ROCK:
                     team = settings.TEAM_ROCK
-                sprite = Square(
-                    (x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares, team
-                )
-                self.sprites.add(sprite)
-                self.squares.add_to_grid(sprite, x, y)
-        # spawn human player
-        controller = command.InputControllerA()
-        player = Player(controller, (0, 0), settings.TEAM_1)
-        self.sprites.add(player)
-        self.players.add(player)
-        # spawn bot player
-        controller = command.DumbAIController()
-        player = Player(controller, (64 - 8, 64 - 8), settings.TEAM_2)
-        self.sprites.add(player)
-        self.players.add(player)
+                case level.CHAR_BLANK:
+                    team = settings.TEAM_NONE
+                case level.CHAR_T1:
+                    team = settings.TEAM_1_SPAWN
+                    controller = command.InputControllerA()
+                    player = Player(controller, (x * 8, y * 8), settings.TEAM_1)
+                    self.sprites.add(player)
+                    self.players.add(player)
+                case level.CHAR_T2:
+                    team = settings.TEAM_2_SPAWN
+                    controller = command.DumbAIController(self.level.ai_dumbness)
+                    player = Player(controller, (x * 8, y * 8), settings.TEAM_2)
+                    self.sprites.add(player)
+                    self.players.add(player)
+            sprite = Square(
+                (x * 8, y * 8), self.players, self.blanks, self.team_one_squares, self.team_two_squares, team
+            )
+            self.sprites.add(sprite)
+            self.squares.add_to_grid(sprite, x, y)
+            print(char, x, y, team)
+            x += 1
         # play ost
         pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
         pygame.mixer.music.play()
@@ -636,8 +655,6 @@ class Gameplay:
             settings.TEAM_1: 0,
             settings.TEAM_2: 0,
         }
-        # handles exit
-        self.dead = False
 
     def get_square_count(self, team):
         count = 0
@@ -649,6 +666,15 @@ class Gameplay:
     def get_ko_count(self, team):
         return self.kos[team]
 
+    def can_put_powerup_in_spot(self, spot):
+        center = (spot[0] * 8 + 4, spot[1] * 8 + 4)
+        if not self.squares.is_clear_position(*spot):
+            return False
+        for sprite in self.powerups:
+            if sprite.rect.collidepoint((center)):
+                return False
+        return True
+
     def update(self) -> None:
         if self.timer.time_left:
             self.sprites.update()
@@ -658,11 +684,11 @@ class Gameplay:
                 self.powerup_timer.restart()
                 while True:
                     spot = (random.randint(0, 7), random.randint(0, 7))
-                    if spot not in self.used_spots and self.squares.is_clear_position(*spot):
+                    if self.can_put_powerup_in_spot(spot):
                         break
-                powerup = random.choice(self.POWERUPS)((spot[0] * 8, spot[1] * 8))
-                self.used_spots.add(spot)
+                powerup = self.POWERUPS[random.choice(self.level.powerups)]((spot[0] * 8, spot[1] * 8))
                 self.sprites.add(powerup)
+                self.powerups.add(powerup)
         elif not self.added_scoreboard:
             self.hud.add(scoreboard.ScoreBoard(self))
             self.added_scoreboard = True
