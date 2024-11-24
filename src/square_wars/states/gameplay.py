@@ -590,17 +590,19 @@ class Gameplay:
     }
 
     def __init__(self):
+        self.level_index = 0
         # timer
         self.timer = timer.Timer(64)
         self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
-        # sets a bunch of variables
-        self.reset()
         # handles level switch
         self.state = self.STATE_START
+        self.scoreboard = None
+        # sets a bunch of variables
+        self.reset()
 
-    def reset(self, level_index=0):
-        self.level = level.LEVELS[level_index]
+    def reset(self):
+        self.level = level.LEVELS[self.level_index]
         # sprite groups
         self.sprites = pygame.sprite.LayeredUpdates()
         self.powerups = pygame.sprite.Group()
@@ -644,13 +646,23 @@ class Gameplay:
             self.squares.add_to_grid(sprite, x, y)
             print(char, x, y, team)
             x += 1
-        # play ost
-        pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
-        pygame.mixer.music.play()
+        # set game values
         self.kos = {
             settings.TEAM_1: 0,
             settings.TEAM_2: 0,
         }
+        self.state = self.STATE_START
+        # create scoreboard
+        self.scoreboard = scoreboard.ScoreBoard(self, self.level.remark)
+        self.hud.add(self.scoreboard)
+        # timer stuff
+        self.timer.restart()
+        self.powerup_timer.restart()
+        # Jiffy's turn for some hax code
+        state = common.current_state
+        common.current_state = self
+        self.sprites.update()
+        common_current_state = state
 
     def get_square_count(self, team):
         count = 0
@@ -672,7 +684,11 @@ class Gameplay:
         return True
 
     def update(self) -> None:
-        if self.timer.time_left:
+        if self.state == self.STATE_GAMEPLAY:
+            if not self.timer.time_left:
+                self.state = self.STATE_END
+                self.scoreboard = scoreboard.ScoreBoard(self)
+                self.hud.add(self.scoreboard)
             self.sprites.update()
             self.caption_string = f"TIME: {int(self.timer.update()):02d}"
             self.powerup_timer.update()
@@ -685,9 +701,19 @@ class Gameplay:
                 powerup = self.POWERUPS[random.choice(self.level.powerups)]((spot[0] * 8, spot[1] * 8))
                 self.sprites.add(powerup)
                 self.powerups.add(powerup)
-        elif not self.added_scoreboard:
-            self.hud.add(scoreboard.ScoreBoard(self))
-            self.added_scoreboard = True
+        elif self.state == self.STATE_START:
+            if self.scoreboard.done:
+                self.state = self.STATE_GAMEPLAY
+                pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
+                pygame.mixer.music.play()
+                self.scoreboard.kill()
+                self.scoreboard = None
+        elif self.state == self.STATE_END:
+            if self.scoreboard.done:
+                self.level_index += 1
+                if self.level_index == len(level.LEVELS):
+                    raise NotImplementedError("We don't have an ending yet.")
+                self.reset()
         self.hud.update()
 
     def draw(self, surface=None) -> None:
@@ -700,7 +726,6 @@ class Gameplay:
         # hax
         state = common.current_state
         common.current_state = self
-        self.update()
         common.current_state = state
 
         # more hax

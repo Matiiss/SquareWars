@@ -16,7 +16,6 @@ CHAR_GRAVEL = "%"
 
 @dataclass
 class Level:
-    index: int
     remark: str
     powerups: list
     ai_dumbness: int
@@ -24,8 +23,7 @@ class Level:
     fov: bool = False
     
 LEVEL_1 = Level(
-    index=1,
-    remark="Move: WASD\nPause: e",
+    remark="Move:\nWASD\nPause:\ne",
     powerups=(POWERUP_SPEEDUP,),
     ai_dumbness=25,
     world="""
@@ -40,6 +38,23 @@ LEVEL_1 = Level(
 """
 )
 
+LEVEL_2 = Level(
+    remark="Shoot:\nq\n",
+    powerups=(POWERUP_SPEEDUP, POWERUP_GUN),
+    ai_dumbness=20,
+    world="""
+1.......
+..#...#.
+#.......
+..###...
+...###..
+.......#
+.#...#..
+.......2
+"""
+)
+
 LEVELS = (
     LEVEL_1,
+    LEVEL_2,
 )
