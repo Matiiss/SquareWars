@@ -18,7 +18,7 @@ if any(settings.DISPLAY_FLAGS & flag for flag in [pygame.SCALED, pygame.OPENGL, 
     renderer = pg_sdl2.Renderer.from_window(window)
 else:
     renderer = pg_sdl2.Renderer(window)
-renderer.draw_color = "#b22222"
+renderer.draw_color = "#391f21"
 
 assets.load_assets()
 
