@@ -1,4 +1,3 @@
-import time
 from typing import Any
 
 import pygame
@@ -84,7 +83,7 @@ class MainMenu:
         pygame.mixer.music.load(assets.ost_path("SquareWars"))
         pygame.mixer.music.play(loops=-1)
 
-        self.transition_easers: dict[Any, Easy] = {}
+        self.transition_easers: dict[Any, easings.EasyVec] = {}
 
     def update(self) -> None:
         self.sprites.update()
@@ -157,56 +156,56 @@ class MainMenu:
         t_image.alpha = 255
         t_image.alpha2 = 255
 
+        # def ease(x):
+        #     return (
+        #         21.38980 * x**7
+        #         - 62.23165 * x**6
+        #         + 64.67897 * x**5
+        #         - 23.29794 * x**4
+        #         - 6.39182 * x**3
+        #         + 8.21920 * x**2
+        #         - 1.37910 * x**1
+        #         + 0.00776 * x**0
+        #     )
+
         def ease(x):
             return (
-                21.38980 * x**7
-                - 62.23165 * x**6
-                + 64.67897 * x**5
-                - 23.29794 * x**4
-                - 6.39182 * x**3
-                + 8.21920 * x**2
-                - 1.37910 * x**1
-                + 0.00776 * x**0
+                -489051275.67954 * x**25
+                + 3370247136.69583 * x**24
+                - 9087988458.11210 * x**23
+                + 10568251835.33066 * x**22
+                - 779117597.43718 * x**21
+                - 9298948490.07450 * x**20
+                + 3105708851.85429 * x**19
+                + 8759065407.20914 * x**18
+                - 4000187023.25428 * x**17
+                - 8703846651.73520 * x**16
+                + 5562523752.04632 * x**15
+                + 8014163229.22339 * x**14
+                - 9278031238.17117 * x**13
+                - 3356176679.08941 * x**12
+                + 13484070599.21112 * x**11
+                - 13133199227.21771 * x**10
+                + 7474819587.38848 * x**9
+                - 2837586721.03713 * x**8
+                + 745544227.51096 * x**7
+                - 135737438.22430 * x**6
+                + 16753941.64108 * x**5
+                - 1340627.94398 * x**4
+                + 64480.39264 * x**3
+                - 1636.02374 * x**2
+                + 16.50986 * x**1
+                - 0.01325 * x**0
             )
 
         dist = 50
         time_s = 1
 
         p_button = self.ui_manager["play_button"]
-        self.transition_easers[p_button] = Easy(
+        self.transition_easers[p_button] = easings.EasyVec(
             ease, p_button.position, pygame.Vector2(p_button.position.x, p_button.position.y - dist), time_s
         )
         s_button = self.ui_manager["settings_button"]
-        self.transition_easers[s_button] = Easy(
+        self.transition_easers[s_button] = easings.EasyVec(
             ease, s_button.position, pygame.Vector2(s_button.position.x, s_button.position.y + dist), time_s
         )
-
-
-class Easy:
-    def __init__(
-        self,
-        easing,
-        start_pos: pygame.Vector2,
-        end_pos: pygame.Vector2,
-        total_time_s: float,
-        start_immediately: bool = True,
-    ) -> None:
-        self.easing = easing
-
-        self.start_pos = start_pos.copy()
-        self.end_pos = end_pos.copy()
-        self.current_pos = self.start_pos.copy()
-
-        self.total_time_s = total_time_s
-        self.start_time_s = time.perf_counter()
-
-    def update(self):
-        elapsed_time_s = time.perf_counter() - self.start_time_s
-        if elapsed_time_s > self.total_time_s:
-            self.current_pos = self.end_pos
-            return
-
-        time_fraction = elapsed_time_s / self.total_time_s
-        x = easings.scale(self.start_pos.x, self.end_pos.x, self.easing(time_fraction))
-        y = easings.scale(self.start_pos.y, self.end_pos.y, self.easing(time_fraction))
-        self.current_pos = pygame.Vector2(x, y)
