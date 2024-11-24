@@ -53,9 +53,10 @@ class ScoreBoard(pygame.sprite.Sprite):
         if self.text != self.last_text:
             self.renderer.rechunk(chunky.parse_chunky_text(self.text))
         self.renderer.update()
-        rect = self.renderer.image.get_rect()
+        rect = self.renderer.image.get_bounding_rect()
         rect.centerx = self.image.get_rect().centerx
-        rect.bottom = self.image.get_rect().bottom - 4
+        rect.centery = self.image.get_rect().centerx
+        rect.top = max(rect.top, 15)
         self.image = self.bg_image.copy()
         self.image.blit(self.renderer.image, rect)
         for event in common.events:
