@@ -1,14 +1,9 @@
 import queue
 import random
 import pygame
-from typing import Iterator
+from collections.abc import Iterator
 
-from .. import settings
-from .. import command
-from .. import common
-from .. import animation
-from .. import assets
-from .. import timer, scoreboard, particles
+from .. import timer, scoreboard, particles, assets, animation, common, command, settings, utils
 
 
 def center_point_collide(sprite1, sprite2):
@@ -44,7 +39,7 @@ class Explosion(pygame.sprite.Sprite):
         super().__init__()
         self.layer = 3
         self.rect = pygame.FRect(pos, (8, 8))
-        self.anim = animation.NoLoopAnimation(animation.get_spritesheet(assets.images["explosion"]))
+        self.anim = animation.NoLoopAnimation(utils.get_sprite_sheet(assets.images["explosion"]))
         self.image = self.anim.image
         self.deadly_timer = timer.Timer(0.6)
 
@@ -94,14 +89,14 @@ class Player(pygame.sprite.Sprite):
         self.particle_timer = timer.Timer(0.3)
         color = {settings.TEAM_2: "2", settings.TEAM_1: "1"}[self.team]
         self.anim_dict = {
-            (-1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
-            (0, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"]), flip_x=True),
-            (1, -1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}Back"])),
-            (1, 0): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
-            (1, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
-            (0, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"])),
-            (-1, 1): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"]), flip_x=True),
-            (-1, 0): animation.Animation(animation.get_spritesheet(assets.images[f"Mr{color}"]), flip_x=True),
+            (-1, -1): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}Back"]), flip_x=True),
+            (0, -1): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}Back"]), flip_x=True),
+            (1, -1): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}Back"])),
+            (1, 0): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}"])),
+            (1, 1): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}"])),
+            (0, 1): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}"])),
+            (-1, 1): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}"]), flip_x=True),
+            (-1, 0): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}"]), flip_x=True),
         }
 
         self.controller.register_sprite(self)
@@ -291,16 +286,16 @@ class Speedup(pygame.sprite.Sprite):
         self.rect = pygame.FRect(pos, (8, 8))
         x, y = int(pos[0] / 8), int(pos[1] / 8)
         anim_dict = {
-            (x, y - 1): ((0, -1), animation.Animation(animation.get_spritesheet(assets.images["speedup"])[2:])),
+            (x, y - 1): ((0, -1), animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:])),
             (x, y + 1): (
                 (0, 1),
-                animation.Animation(animation.get_spritesheet(assets.images["speedup"])[2:], flip_y=True),
+                animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:], flip_y=True),
             ),
             (x - 1, y): (
                 (-1, 0),
-                animation.Animation(animation.get_spritesheet(assets.images["speedup"])[:2], flip_x=True),
+                animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2], flip_x=True),
             ),
-            (x + 1, y): ((0, 1), animation.Animation(animation.get_spritesheet(assets.images["speedup"])[:2])),
+            (x + 1, y): ((0, 1), animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2])),
         }
         squares = common.current_state.squares
         for position, (direction, anim) in anim_dict.items():
@@ -364,7 +359,7 @@ class GasCan(pygame.sprite.Sprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
         self.layer = 4
-        frames = animation.get_spritesheet(assets.images["gascan"])
+        frames = utils.get_sprite_sheet(assets.images["gascan"])
         self.anim_dict = {
             "idle": animation.SingleAnimation(frames[0]),
             "lit": animation.Animation(frames[:3]),
@@ -420,7 +415,7 @@ class Barbwire(pygame.sprite.Sprite):
         self.layer = 4
         self.live_timer = timer.Timer(7)
         self.rect = pygame.Rect(position, (8, 8))
-        self.images = animation.get_spritesheet(assets.images["barbwire"])
+        self.images = utils.get_sprite_sheet(assets.images["barbwire"])
         self.live = owner is not None
         self.image = self.images[self.live]
         self.owner = owner
@@ -483,7 +478,8 @@ class Square(pygame.sprite.Sprite):
                     settings.TEAM_1_SPAWN,
                     settings.TEAM_2_SPAWN,
                 ),
-                animation.get_spritesheet(assets.images["tileset"]),
+                utils.get_sprite_sheet(assets.images["tileset"]),
+                strict=False,
             )
         )
         self.occupant = None
