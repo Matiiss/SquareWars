@@ -27,6 +27,8 @@ class UIManager:
             self.selector_arrow.current_idx = len(self.widgets) - 1
 
         self._add_selectable(widget=widget, selector=selector)
+        if hasattr(widget, "set_ui"):
+            widget.set_ui(self)
 
         return self
 

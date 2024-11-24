@@ -4,9 +4,10 @@ from . import settings, timer, assets, chunky, common, utils
 
 
 class ScoreBoard(pygame.sprite.Sprite):
-    def __init__(self, gameplay_state):
+    def __init__(self, gameplay_state, text=None):
         super().__init__()
         self.bg_image = utils.nine_slice(utils.get_sprite_sheet(assets.images["guiWoodBG"]), (64, 64))
+        self.true_text = text
         title_image = assets.images["menu_title"]
         title_rect = title_image.get_rect()
         title_rect.centerx = self.bg_image.get_width() / 2
@@ -24,6 +25,8 @@ class ScoreBoard(pygame.sprite.Sprite):
 
     @property
     def text(self):
+        if self.true_text is not None:
+            return self.true_text
         team1_squares = self.gameplay_state.get_square_count(settings.TEAM_1)
         team1_kos = self.gameplay_state.get_ko_count(settings.TEAM_1)
         team2_squares = self.gameplay_state.get_square_count(settings.TEAM_2)
