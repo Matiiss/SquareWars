@@ -56,8 +56,11 @@ class InputControllerA(Controller):
         self.sprite = sprite
 
     def on_motion_input(self) -> None:
-        """
         keys = pygame.key.get_pressed()
+        self.command_queue.put((Command(COMMAND_STOP_UP)))
+        self.command_queue.put((Command(COMMAND_STOP_DOWN)))
+        self.command_queue.put((Command(COMMAND_STOP_LEFT)))
+        self.command_queue.put((Command(COMMAND_STOP_RIGHT)))
         if keys[self.up_key]:
             self.command_queue.put(Command(COMMAND_UP))
         if keys[self.down_key]:
@@ -66,7 +69,6 @@ class InputControllerA(Controller):
             self.command_queue.put(Command(COMMAND_LEFT))
         if keys[self.right_key]:
             self.command_queue.put(Command(COMMAND_RIGHT))
-        """
 
     def update(self) -> None:
         for event in common.events:
@@ -190,7 +192,7 @@ class DumbAIController(Controller):
             self.command_queue.put(Command(self.pathfind_queue.get()))
         if (
             self.sprite.aligned
-            and not self.sprite.speedup_timer.time_left
+            and not self.sprite.speeding_up
             and not random.randint(0, self.random_latency)
         ):
             go = True

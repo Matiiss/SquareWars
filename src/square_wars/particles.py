@@ -3,9 +3,10 @@ import pygame, random
 from . import timer, common
 
 
-class PixelParticle(pygame.sprite.Sprite):
+class PixelParticle(pygame.sprite.DirtySprite):
     def __init__(self, position, layer, color, direction, life):
         super().__init__()
+        self.dirty = 2
         self.layer = layer
         self.rect = pygame.FRect(position, (1, 1))
         self.direction = pygame.Vector2(direction)

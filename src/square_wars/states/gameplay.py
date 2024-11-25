@@ -11,10 +11,10 @@ def center_point_collide(sprite1, sprite2):
     return sprite1.rect.collidepoint(sprite2.rect.center)
 
 
-class Bullet(pygame.sprite.Sprite):
+class Bullet(pygame.sprite.DirtySprite):
     SPEED = 64
 
-    def __init__(self, pos: tuple[int, int], direction: pygame.Vector2, owner: pygame.sprite.Sprite):
+    def __init__(self, pos: tuple[int, int], direction: pygame.Vector2, owner: pygame.sprite.DirtySprite):
         super().__init__()
         self.layer = 3
         self.image = pygame.Surface((1, 1))
@@ -35,7 +35,7 @@ class Bullet(pygame.sprite.Sprite):
                 self.kill()
 
 
-class Explosion(pygame.sprite.Sprite):
+class Explosion(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
         self.layer = 3
@@ -61,13 +61,14 @@ class Explosion(pygame.sprite.Sprite):
             self.kill()
 
 
-class Player(pygame.sprite.Sprite):
+class Player(pygame.sprite.DirtySprite):
     SPEED = 32
     SPEEDY_SPEED = 64
     GHOST_SPEED = 32
 
     def __init__(self, controller: command.Controller, pos: tuple[int, int], team: int):
         super().__init__()
+        self.dirty = 2
         self.layer = 3
         self.controller = controller
         self.team = team
@@ -77,8 +78,7 @@ class Player(pygame.sprite.Sprite):
         self.last_moving = [0, 1]
         self.command_queue = queue.Queue()
         self.squares = pygame.sprite.Group()
-        self.speedup_timer = timer.Timer(1)
-        self.speedup_timer.end()
+        self.speeding_up = False
         self.blink_timer = timer.Timer(0.1)
         self.blink_on = False
         self.align_flag = False
@@ -124,7 +124,7 @@ class Player(pygame.sprite.Sprite):
             image = self.ghost_anim.image.copy()
             image.set_alpha(self.whacked_timer.decimal_percent_left * 255)
             return image
-        if self.speedup_timer.time_left and self.blink_on:
+        if self.speeding_up and self.blink_on:
             return self.blank_image
         facing = self.moving
         if not pygame.Vector2(self.moving):
@@ -145,7 +145,7 @@ class Player(pygame.sprite.Sprite):
         return (int(self.rect.x) % 8, int(self.rect.y) % 8) in {(0, 4), (4, 0), (4, 4)}
 
     def speedup(self, direction):
-        self.speedup_timer.restart()
+        self.speeding_up = True
         self.moving = list(direction)
 
     def set_powerup(self, sprite):
@@ -174,7 +174,7 @@ class Player(pygame.sprite.Sprite):
             self.particle_timer.restart()
             lower_bound = 5
             upper_bound = 6
-            if self.speedup_timer.time_left:
+            if self.speeding_up:
                 lower_bound = 13
                 upper_bound = 17
             for particle in particles.particle_splash(
@@ -202,7 +202,7 @@ class Player(pygame.sprite.Sprite):
             # Stage 2: evaluate motion commands only when player is aligned with the grid
             # Ensures that the player cannot stop motion or change direction when not aligned
             last_moving = list(self.moving)
-            if self.aligned and self.speedup_timer.time_left < 0.5:
+            if self.aligned and not self.speeding_up:
                 while self.command_queue.qsize():
                     next_command = self.command_queue.get()
                     match next_command:
@@ -228,8 +228,7 @@ class Player(pygame.sprite.Sprite):
             self.moving[0] = pygame.math.clamp(self.moving[0], -1, 1)
             self.moving[1] = pygame.math.clamp(self.moving[1], -1, 1)
             speed = self.SPEED
-            self.speedup_timer.update()
-            if self.speedup_timer.time_left:
+            if self.speeding_up:
                 speed = self.SPEEDY_SPEED
             # state handling for visuals
             if self.moving != last_moving and pygame.Vector2(last_moving):
@@ -262,8 +261,11 @@ class Player(pygame.sprite.Sprite):
                     else:
                         self.rect.top = sprite.rect.bottom
                         moved = True
+            if not pygame.Rect((0, 0, 64, 64)).contains(self.rect):
+                moved = True
             if moved:
                 self.controller.on_motion_input()
+                self.speeding_up = False
             self.rect.clamp_ip((0, 0, 64, 64))
             self.blink_timer.update()
             if not self.blink_timer.time_left:
@@ -280,33 +282,34 @@ class Player(pygame.sprite.Sprite):
                 self.whacked = False
 
 
-class Speedup(pygame.sprite.Sprite):
+class Speedup(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.dirty = 2
         self.layer = 2
         self.rect = pygame.FRect(pos, (8, 8))
         x, y = int(pos[0] / 8), int(pos[1] / 8)
         anim_dict = {
-            (x, y - 1): ((0, -1), animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:])),
-            (x, y + 1): (
-                (0, 1),
-                animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:], flip_y=True),
-            ),
-            (x - 1, y): (
-                (-1, 0),
-                animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2], flip_x=True),
-            ),
-            (x + 1, y): ((0, 1), animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2])),
+            (0, -1): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:]),
+            (0, 1): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:], flip_y=True),
+            (-1, 0): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2], flip_x=True),
+            (1, 0): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2]),
         }
         squares = common.current_state.squares
-        for position, (direction, anim) in anim_dict.items():
-            if common.current_state.squares.is_clear_position(*position):
-                self.anim = anim
-                self.direction = direction
-                break
-        else:
-            self.direction, self.anim = tuple(anim_dict.values())[0]
+        self.coord = x, y
+        self.direction = sorted(anim_dict.keys(), key=self.get_direction_score, reverse=True)[random.randint(0, 1)]
+        self.anim = anim_dict[self.direction]
         self.image = self.anim.image
+
+    def get_direction_score(self, direction):
+        score = 0
+        x, y = self.coord
+        dx, dy = direction
+        while common.current_state.squares.is_clear_position(x, y):
+            x += dx
+            y += dy
+            score += 1
+        return score
 
     def unused(self):
         return True  # use kills it
@@ -324,9 +327,10 @@ class Speedup(pygame.sprite.Sprite):
                 self.kill()
 
 
-class ShotGun(pygame.sprite.Sprite):
+class ShotGun(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.dirty = 2
         self.layer = 4
         self.image = assets.images["gun"]
         self.rect = pygame.Rect(pos, (8, 8))
@@ -357,9 +361,10 @@ class ShotGun(pygame.sprite.Sprite):
         self.kill()
 
 
-class GasCan(pygame.sprite.Sprite):
+class GasCan(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.dirty = 2
         self.layer = 4
         frames = utils.get_sprite_sheet(assets.images["gascan"])
         self.anim_dict = {
@@ -414,9 +419,10 @@ class GasCan(pygame.sprite.Sprite):
         self.state = "lit"
 
 
-class Barbwire(pygame.sprite.Sprite):
+class Barbwire(pygame.sprite.DirtySprite):
     def __init__(self, position: tuple[int, int], owner=None):
         super().__init__()
+        self.dirty = 2
         self.layer = 4
         self.live_timer = timer.Timer(7)
         self.rect = pygame.Rect(position, (8, 8))
@@ -447,7 +453,7 @@ class Barbwire(pygame.sprite.Sprite):
         self.update_visuals()
 
 
-class Square(pygame.sprite.Sprite):
+class Square(pygame.sprite.DirtySprite):
     def __init__(
         self,
         pos: tuple[int, int],
@@ -458,6 +464,7 @@ class Square(pygame.sprite.Sprite):
         start_team: settings.TEAM_NONE,
     ):
         super().__init__()
+        self.dirty = 2
         self.layer = 1
         self.rect = pygame.FRect(0, 0, 8, 8)
         self.rect.topleft = pos
@@ -482,6 +489,7 @@ class Square(pygame.sprite.Sprite):
                     settings.TEAM_2,
                     settings.TEAM_1_SPAWN,
                     settings.TEAM_2_SPAWN,
+                    settings.TEAM_GRAVEL,
                 ),
                 utils.get_sprite_sheet(assets.images["tileset"]),
                 strict=False,
@@ -511,7 +519,7 @@ class Square(pygame.sprite.Sprite):
         self.teamchange_timer.update()
         # check if I collide with any players and change color to match
         changed = False
-        if self.team not in {settings.TEAM_ROCK, settings.TEAM_1_SPAWN, settings.TEAM_2_SPAWN}:
+        if self.team not in {settings.TEAM_GRAVEL, settings.TEAM_ROCK, settings.TEAM_1_SPAWN, settings.TEAM_2_SPAWN}:
             if self.occupant is not None:
                 if not self.rect.collidepoint(self.occupant.rect.center):
                     self.occupant = None
@@ -526,7 +534,7 @@ class Square(pygame.sprite.Sprite):
                     if sprite is not self.occupant and not sprite.whacked:
                         self.occupant = sprite
                         self.teamchange_timer.restart()
-                        if self.occupant.speedup_timer.time_left:
+                        if self.occupant.speeding_up:
                             self.teamchange_timer.end()
             if changed:
                 # update team groups to reflect new ownership
@@ -575,7 +583,34 @@ class SquareSpriteGroup(pygame.sprite.Group):
             settings.TEAM_1,
             settings.TEAM_2,
             settings.TEAM_NONE,
+            settings.TEAM_GRAVEL,
         }
+
+
+class FOV(pygame.sprite.DirtySprite):
+    def __init__(self, player):
+        super().__init__()
+        self.dirty = 2
+        self.layer = 10  # goes over EVERYTHING
+        self.rect = pygame.Rect(0, 0, 64, 64)
+        self.player = player
+        self.surface = pygame.Surface((64, 64)).convert()
+        self.fov_image = assets.images["fov"]
+        self.fov_rect = self.fov_image.get_rect()
+        self.blendmode = pygame.BLEND_RGB_MIN
+
+    @property
+    def image(self):
+        self.surface.fill("#000000")
+        self.fov_rect.center = self.player.rect.center
+        self.surface.blit(self.fov_image, self.fov_rect)
+        return self.surface
+
+    def update_visuals(self):
+        pass
+
+    def update(self):
+        self.update_visuals()
 
 
 class Gameplay:
@@ -583,11 +618,15 @@ class Gameplay:
     STATE_GAMEPLAY = 2
     STATE_END = 3
     STATE_PAUSE = 4
+    STATE_VICTORY = 5
+    STATE_DEFEAT = 6
+
     POWERUPS = {
         level.POWERUP_SPEEDUP: Speedup,
         level.POWERUP_GASCAN: GasCan,
         level.POWERUP_GUN: ShotGun,
         level.POWERUP_BARBWIRE: Barbwire,
+        level.POWERUP_TORCH: Barbwire  # FOR NOW...
     }
 
     def __init__(self):
@@ -599,13 +638,24 @@ class Gameplay:
         # handles level switch
         self.state = self.STATE_START
         self.scoreboard = None
+        self.total_score = 0
         # sets a bunch of variables
         self.reset()
+
+    def pause(self):
+        self.state = self.STATE_PAUSE
+        pygame.mixer.music.pause()
+        self.scoreboard = scoreboard.ScoreBoard(self, f"PAUSED\nTime:{int(self.timer.time_left):02d}")
+        self.hud.add(self.scoreboard)
+
+    def unpause(self):
+        self.state = self.STATE_GAMEPLAY
+        pygame.mixer.music.unpause()
 
     def reset(self):
         self.level = level.LEVELS[self.level_index]
         # sprite groups
-        self.sprites = pygame.sprite.LayeredUpdates()
+        self.sprites = pygame.sprite.LayeredDirty()
         self.powerups = pygame.sprite.Group()
         self.players = pygame.sprite.Group()
         self.hud = pygame.sprite.Group()
@@ -626,6 +676,8 @@ class Gameplay:
                     continue
                 case level.CHAR_ROCK:
                     team = settings.TEAM_ROCK
+                case level.CHAR_GRAVEL:
+                    team = settings.TEAM_GRAVEL
                 case level.CHAR_BLANK:
                     team = settings.TEAM_NONE
                 case level.CHAR_T1:
@@ -634,6 +686,9 @@ class Gameplay:
                     player = Player(controller, (x * 8, y * 8), settings.TEAM_1)
                     self.sprites.add(player)
                     self.players.add(player)
+                    # spawn FOV blinder (if needed)
+                    if self.level.fov:
+                        self.sprites.add(FOV(player))
                 case level.CHAR_T2:
                     team = settings.TEAM_2_SPAWN
                     controller = command.DumbAIController(self.level.ai_dumbness)
@@ -645,7 +700,6 @@ class Gameplay:
             )
             self.sprites.add(sprite)
             self.squares.add_to_grid(sprite, x, y)
-            print(char, x, y, team)
             x += 1
         # set game values
         self.kos = {
@@ -665,6 +719,9 @@ class Gameplay:
         self.sprites.update()
         common_current_state = state
         self.transition_easers: dict[Any, easings.EasyScalar] = {}
+
+    def get_winner(self):
+        return list(sorted((settings.TEAM_1, settings.TEAM_2), key=lambda x: self.get_square_count(x) - self.get_ko_count(x)))[-1]
 
     def get_square_count(self, team):
         count = 0
@@ -694,7 +751,7 @@ class Gameplay:
             self.sprites.update()
             self.caption_string = f"TIME: {int(self.timer.update()):02d}"
             self.powerup_timer.update()
-            if not self.powerup_timer.time_left:
+            if (not self.powerup_timer.time_left) and self.level.powerups:
                 self.powerup_timer.restart()
                 while True:
                     spot = (random.randint(0, 7), random.randint(0, 7))
@@ -703,19 +760,34 @@ class Gameplay:
                 powerup = self.POWERUPS[random.choice(self.level.powerups)]((spot[0] * 8, spot[1] * 8))
                 self.sprites.add(powerup)
                 self.powerups.add(powerup)
+            for event in common.events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+                    self.pause()
         elif self.state == self.STATE_START:
             if self.scoreboard.done:
                 self.state = self.STATE_GAMEPLAY
                 pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
                 pygame.mixer.music.play()
-                self.scoreboard.kill()
-                self.scoreboard = None
         elif self.state == self.STATE_END:
             if self.scoreboard.done:
                 self.level_index += 1
-                if self.level_index == len(level.LEVELS):
-                    raise NotImplementedError("We don't have an ending yet.")
-                self.reset()
+                self.total_score += self.get_square_count(settings.TEAM_1) - self.get_ko_count(settings.TEAM_1)
+                if self.get_winner() != settings.TEAM_1:
+                    self.state = self.STATE_DEFEAT
+                    self.scoreboard = scoreboard.ScoreBoard(self, f"Failure.\n{self.total_score}pts")
+                    self.hud.add(self.scoreboard)
+                elif self.level_index >= len(level.LEVELS):
+                    self.state = self.STATE_VICTORY
+                    self.scoreboard = scoreboard.ScoreBoard(self, f"Victory!\n{self.total_score}pts")
+                    self.hud.add(self.scoreboard)
+                else:
+                    self.reset()
+        elif self.state == self.STATE_PAUSE:
+            if self.scoreboard.done:
+                self.unpause()
+        elif self.state in {self.STATE_VICTORY, self.STATE_DEFEAT}:
+            if self.scoreboard.done:
+                raise NotImplementedError("Matt go back to the main menu somehow.")
         self.hud.update()
 
     def draw(self, surface=None) -> None:
