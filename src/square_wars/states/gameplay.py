@@ -161,7 +161,7 @@ class Player(pygame.sprite.DirtySprite):
             self.whacked = True
             self.whacked_timer.restart()
             common.current_state.kos[self.team] += 1
-            self.speedup_timer.end()
+            self.speeding_up = False
             self.motion = [0, 0]
 
     def update_visuals(self):
