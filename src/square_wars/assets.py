@@ -68,6 +68,7 @@ def load_assets():
             "ko": load_image("ko"),
             "guiWoodBG": load_image("guiWoodBG"),
             "clouds": load_image("clouds"),
+            "fov": load_image("fov"),
         }
     )
     sfx.update(
