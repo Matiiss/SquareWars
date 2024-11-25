@@ -26,7 +26,7 @@ class ScoreBoard(pygame.sprite.Sprite):
     @property
     def text(self):
         if self.true_text is not None:
-            return self.true_text + '\n'
+            return self.true_text + "\n"
         team1_squares = self.gameplay_state.get_square_count(settings.TEAM_1)
         team1_kos = self.gameplay_state.get_ko_count(settings.TEAM_1)
         team2_squares = self.gameplay_state.get_square_count(settings.TEAM_2)

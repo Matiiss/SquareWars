@@ -14,6 +14,7 @@ CHAR_T2 = "2"
 CHAR_ROCK = "#"
 CHAR_GRAVEL = "%"
 
+
 @dataclass(frozen=True)
 class Level:
     remark: str
@@ -21,6 +22,7 @@ class Level:
     ai_dumbness: int
     world: str
     fov: bool = False
+
     
 TUTORIAL = Level(
     remark="Move:\n WASD\nPause:\n e",
@@ -35,12 +37,12 @@ TUTORIAL = Level(
 ...#.%..
 .%......
 ..#....2
-"""
+""",
 )
 
 TUTORIAL_GUN = Level(
     remark="Shoot:\nq\n",
-    powerups=(POWERUP_SPEEDUP, POWERUP_GUN),
+    powerups=[POWERUP_SPEEDUP, POWERUP_GUN],
     ai_dumbness=20,
     world="""
 1.......
@@ -67,7 +69,7 @@ TUTORIAL_GASCAN = Level(
 ........
 ........
 .......2
-"""
+""",
 )
 
 TWO_OPPONENT = Level(
