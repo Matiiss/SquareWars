@@ -169,9 +169,6 @@ DEATH = Level(
 )
 
 LEVELS = (
-    TIME_TRIALS,
-)
-(
     TUTORIAL,
     TUTORIAL_GUN,
     TUTORIAL_GASCAN,

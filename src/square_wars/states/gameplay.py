@@ -288,26 +288,26 @@ class Speedup(pygame.sprite.DirtySprite):
         self.rect = pygame.FRect(pos, (8, 8))
         x, y = int(pos[0] / 8), int(pos[1] / 8)
         anim_dict = {
-            (x, y - 1): ((0, -1), animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:])),
-            (x, y + 1): (
-                (0, 1),
-                animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:], flip_y=True),
-            ),
-            (x - 1, y): (
-                (-1, 0),
-                animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2], flip_x=True),
-            ),
-            (x + 1, y): ((0, 1), animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2])),
+            (0, -1): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:]),
+            (0, 1): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[2:], flip_y=True),
+            (-1, 0): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2], flip_x=True),
+            (1, 0): animation.Animation(utils.get_sprite_sheet(assets.images["speedup"])[:2]),
         }
         squares = common.current_state.squares
-        for position, (direction, anim) in anim_dict.items():
-            if common.current_state.squares.is_clear_position(*position):
-                self.anim = anim
-                self.direction = direction
-                break
-        else:
-            self.direction, self.anim = tuple(anim_dict.values())[0]
+        self.coord = x, y
+        self.direction = sorted(anim_dict.keys(), key=self.get_direction_score, reverse=True)[random.randint(0, 1)]
+        self.anim = anim_dict[self.direction]
         self.image = self.anim.image
+
+    def get_direction_score(self, direction):
+        score = 0
+        x, y = self.coord
+        dx, dy = direction
+        while common.current_state.squares.is_clear_position(x, y):
+            x += dx
+            y += dy
+            score += 1
+        return score
 
     def unused(self):
         return True  # use kills it
