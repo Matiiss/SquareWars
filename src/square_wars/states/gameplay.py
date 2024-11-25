@@ -77,8 +77,7 @@ class Player(pygame.sprite.DirtySprite):
         self.last_moving = [0, 1]
         self.command_queue = queue.Queue()
         self.squares = pygame.sprite.Group()
-        self.speedup_timer = timer.Timer(1)
-        self.speedup_timer.end()
+        self.speeding_up = False
         self.blink_timer = timer.Timer(0.1)
         self.blink_on = False
         self.align_flag = False
@@ -124,7 +123,7 @@ class Player(pygame.sprite.DirtySprite):
             image = self.ghost_anim.image.copy()
             image.set_alpha(self.whacked_timer.decimal_percent_left * 255)
             return image
-        if self.speedup_timer.time_left and self.blink_on:
+        if self.speeding_up and self.blink_on:
             return self.blank_image
         facing = self.moving
         if not pygame.Vector2(self.moving):
@@ -145,7 +144,7 @@ class Player(pygame.sprite.DirtySprite):
         return (int(self.rect.x) % 8, int(self.rect.y) % 8) in {(0, 4), (4, 0), (4, 4)}
 
     def speedup(self, direction):
-        self.speedup_timer.restart()
+        self.speeding_up = True
         self.moving = list(direction)
 
     def set_powerup(self, sprite):
@@ -174,7 +173,7 @@ class Player(pygame.sprite.DirtySprite):
             self.particle_timer.restart()
             lower_bound = 5
             upper_bound = 6
-            if self.speedup_timer.time_left:
+            if self.speeding_up:
                 lower_bound = 13
                 upper_bound = 17
             for particle in particles.particle_splash(
@@ -202,7 +201,7 @@ class Player(pygame.sprite.DirtySprite):
             # Stage 2: evaluate motion commands only when player is aligned with the grid
             # Ensures that the player cannot stop motion or change direction when not aligned
             last_moving = list(self.moving)
-            if self.aligned and self.speedup_timer.time_left < 0.5:
+            if self.aligned and not self.speeding_up:
                 while self.command_queue.qsize():
                     next_command = self.command_queue.get()
                     match next_command:
@@ -228,8 +227,7 @@ class Player(pygame.sprite.DirtySprite):
             self.moving[0] = pygame.math.clamp(self.moving[0], -1, 1)
             self.moving[1] = pygame.math.clamp(self.moving[1], -1, 1)
             speed = self.SPEED
-            self.speedup_timer.update()
-            if self.speedup_timer.time_left:
+            if self.speeding_up:
                 speed = self.SPEEDY_SPEED
             # state handling for visuals
             if self.moving != last_moving and pygame.Vector2(last_moving):
@@ -262,8 +260,11 @@ class Player(pygame.sprite.DirtySprite):
                     else:
                         self.rect.top = sprite.rect.bottom
                         moved = True
+            if not pygame.Rect((0, 0, 64, 64)).contains(self.rect):
+                moved = True
             if moved:
                 self.controller.on_motion_input()
+                self.speeding_up = False
             self.rect.clamp_ip((0, 0, 64, 64))
             self.blink_timer.update()
             if not self.blink_timer.time_left:
@@ -532,7 +533,7 @@ class Square(pygame.sprite.DirtySprite):
                     if sprite is not self.occupant and not sprite.whacked:
                         self.occupant = sprite
                         self.teamchange_timer.restart()
-                        if self.occupant.speedup_timer.time_left:
+                        if self.occupant.speeding_up:
                             self.teamchange_timer.end()
             if changed:
                 # update team groups to reflect new ownership
