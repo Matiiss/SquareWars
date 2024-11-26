@@ -225,8 +225,6 @@ class DumbAIController(Controller):
         if self.sprite.powerup is not None and self.sprite.powerup.type == level.POWERUP_GASCAN:
             if (pygame.Vector2(self.get_target_player().rect.center) - self.sprite.rect.center).length_squared() <= 96:
                 self.command_queue.put(Command(COMMAND_SHOOT))
-                # RUN!!!
-                print("RUN!")
                 self.running_from = self.sprite.rect.center
                 self.running_timer.restart()
         if self.sprite.half_aligned and self.pathfind_queue.qsize():

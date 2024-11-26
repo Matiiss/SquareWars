@@ -2,8 +2,9 @@ import queue
 import random
 import pygame
 from collections.abc import Iterator
+from typing import Any
 
-from .. import timer, scoreboard, particles, assets, animation, common, command, settings, utils, level
+from .. import timer, scoreboard, particles, assets, animation, common, command, settings, utils, level, easings
 
 
 def center_point_collide(sprite1, sprite2):
@@ -431,6 +432,7 @@ class GasCan(pygame.sprite.DirtySprite):
 
     def use(self):
         common.current_state.powerups.add(self)
+        self.player.dequip_powerup()
         self.rect.center = self.player.rect.center
         self.anim = self.anim_dict["lit"]
         self.state = "lit"
@@ -736,6 +738,7 @@ class Gameplay:
         common.current_state = self
         self.sprites.update()
         common_current_state = state
+        self.transition_easers: dict[Any, easings.EasyScalar] = {}
 
     def get_winner(self):
         return list(
@@ -830,10 +833,16 @@ class Gameplay:
         self.____transition_image_width = 0
         common.screen = screen
 
+        self.transition_easers["size"] = easings.EasyScalar(easings.in_bounce, 0, 64, 3)
+
     def transition_update(self) -> None:
+        for easer in self.transition_easers.values():
+            easer.update()
+
         self.____transition_image_alpha += 80 * common.dt
-        self.____transition_image_width += 30 * common.dt
-        self.____transition_image_width = min(self.____transition_image_width, 64)  # nice hardcoded value
+        # self.____transition_image_width += 30 * common.dt
+        # self.____transition_image_width = min(self.____transition_image_width, 64)  # nice hardcoded value
+        self.____transition_image_width = self.transition_easers["size"].current
         self.____transition_image = pygame.transform.scale(
             self.____transition_image_original, (self.____transition_image_width, self.____transition_image_width)
         )

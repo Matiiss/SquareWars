@@ -3,6 +3,9 @@ This module level docstrings is used to give credit to JiffyRob, who made this f
 """
 
 import math
+import time
+
+import pygame
 
 
 def create_exp_easings(exp):
@@ -199,3 +202,64 @@ def in_bounce(time):
 
 def in_out_bounce(time):
     return (1 - out_bounce(1 - 2 * time)) / 2 if time < 0.5 else (1 + out_bounce(2 * time - 1)) / 2
+
+
+# this specifically is what Matiiss made
+
+
+class EasyVec:
+    def __init__(
+        self,
+        easing,
+        start_pos: pygame.Vector2,
+        end_pos: pygame.Vector2,
+        total_time_s: float,
+        start_immediately: bool = True,
+    ) -> None:
+        self.easing = easing
+
+        self.start_pos = start_pos.copy()
+        self.end_pos = end_pos.copy()
+        self.current_pos = self.start_pos.copy()
+
+        self.total_time_s = total_time_s
+        self.start_time_s = time.perf_counter()
+
+    def update(self):
+        elapsed_time_s = time.perf_counter() - self.start_time_s
+        if elapsed_time_s > self.total_time_s:
+            self.current_pos = self.end_pos
+            return
+
+        time_fraction = elapsed_time_s / self.total_time_s
+        x = scale(self.start_pos.x, self.end_pos.x, self.easing(time_fraction))
+        y = scale(self.start_pos.y, self.end_pos.y, self.easing(time_fraction))
+        self.current_pos = pygame.Vector2(x, y)
+
+
+class EasyScalar:
+    def __init__(
+        self,
+        easing,
+        start: float,
+        end: float,
+        total_time_s: float,
+        start_immediately: bool = True,
+    ) -> None:
+        self.easing = easing
+
+        self.start = start
+        self.end = end
+        self.current = start
+
+        self.total_time_s = total_time_s
+        self.start_time_s = time.perf_counter()
+
+    def update(self):
+        elapsed_time_s = time.perf_counter() - self.start_time_s
+        if elapsed_time_s > self.total_time_s:
+            self.current = self.end
+            return
+
+        time_fraction = elapsed_time_s / self.total_time_s
+        self.current = scale(self.start, self.end, self.easing(time_fraction))

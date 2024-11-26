@@ -23,7 +23,7 @@ class Level:
     world: str
     fov: bool = False
 
-
+    
 TUTORIAL = Level(
     remark="Move:\n WASD\nPause:\n e",
     powerups=(POWERUP_SPEEDUP,),
@@ -42,7 +42,7 @@ TUTORIAL = Level(
 
 TUTORIAL_GUN = Level(
     remark="Shoot:\nq\n",
-    powerups=(POWERUP_GUN,),
+    powerups=[POWERUP_SPEEDUP, POWERUP_GUN],
     ai_dumbness=20,
     world="""
 1.......
