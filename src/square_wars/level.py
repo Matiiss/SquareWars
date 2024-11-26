@@ -14,6 +14,7 @@ CHAR_T2 = "2"
 CHAR_ROCK = "#"
 CHAR_GRAVEL = "%"
 
+
 @dataclass(frozen=True)
 class Level:
     remark: str
@@ -21,7 +22,8 @@ class Level:
     ai_dumbness: int
     world: str
     fov: bool = False
-    
+
+
 TUTORIAL = Level(
     remark="Move:\n WASD\nPause:\n e",
     powerups=(POWERUP_SPEEDUP,),
@@ -35,12 +37,12 @@ TUTORIAL = Level(
 ...#.%..
 .%......
 ..#....2
-"""
+""",
 )
 
 TUTORIAL_GUN = Level(
     remark="Shoot:\nq\n",
-    powerups=(POWERUP_SPEEDUP, POWERUP_GUN),
+    powerups=(POWERUP_GUN,),
     ai_dumbness=20,
     world="""
 1.......
@@ -51,12 +53,12 @@ TUTORIAL_GUN = Level(
 .......#
 .#...#%%
 ......%2
-"""
+""",
 )
 
 TUTORIAL_GASCAN = Level(
     remark="Use a\nGAS CAN\nand run.\nBOOM!",
-    powerups=(POWERUP_GUN, POWERUP_GASCAN),
+    powerups=(POWERUP_GASCAN,),
     ai_dumbness=10,
     world="""
 1.......
@@ -67,7 +69,7 @@ TUTORIAL_GASCAN = Level(
 ........
 ........
 .......2
-"""
+""",
 )
 
 TWO_OPPONENT = Level(
@@ -83,7 +85,7 @@ TWO_OPPONENT = Level(
 ....#...
 .#.....#
 .#.....2
-"""
+""",
 )
 
 DUEL = Level(
@@ -99,7 +101,7 @@ DUEL = Level(
 .#....#.
 .##..##.
 .......2
-"""
+""",
 )
 
 DARK = Level(
@@ -116,7 +118,7 @@ DARK = Level(
 ........
 .#.#.#2#
 """,
-fov=True
+    fov=True,
 )
 
 BOMBERMAN = Level(
@@ -133,7 +135,7 @@ BOMBERMAN = Level(
 .%.%.%.%
 %.%.%.%2
 """,
-fov=True
+    fov=True,
 )
 
 TIME_TRIALS = Level(
@@ -149,7 +151,7 @@ TIME_TRIALS = Level(
 ....#...
 .####.#.
 ......#2
-"""
+""",
 )
 
 DEATH = Level(
@@ -165,7 +167,7 @@ DEATH = Level(
 .#....#.
 .##%%##.
 2......2
-"""
+""",
 )
 
 LEVELS = (
