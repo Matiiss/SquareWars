@@ -55,6 +55,27 @@ class MainMenu:
     caption_string = "Main Menu"
     day_color = pygame.color.Color("#0098dc")
     night_color = pygame.color.Color("#1a1932")
+    day_window_color = pygame.color.Color("#131313")
+    night_window_color = pygame.color.Color("#ffeb57")
+    # that's right - I hardcoded individual pixel coordinates
+    window_coordinates = (
+        (5, 42),
+        (4, 43),
+        (5, 43),
+        (6, 43),
+        (6, 46),
+        (7, 46),
+        (6, 47),
+        (7, 47),
+        (59, 56),
+        (58, 57),
+        (59, 57),
+        (60, 57),
+        (60, 60),
+        (61, 60),
+        (60, 61),
+        (61, 61),
+    )
     day_length = 10
 
     def __init__(self):
@@ -106,11 +127,17 @@ class MainMenu:
         if surface is None:
             surface = common.screen
         # day/night cycle
-        x = self.time / 5  # five seconds/day (and /night, /dawn, /dusk)
+        x = self.time / 15  # fifteen seconds/day (and /night, /dawn, /dusk)
         lerp_value = pygame.math.clamp((abs((x % 4) - 2) - 1) + (abs(((x - 1) % 4) - 2)) / 2, 0, 1)
+        # sky
         surface.fill(self.night_color.lerp(self.day_color, lerp_value))
         common.screen.blit(assets.images["menu_bg"], (0, 0))
+        # windows
+        window_color = self.night_window_color.lerp(self.day_window_color, lerp_value)
+        for coord in self.window_coordinates:
+            surface.set_at(coord, window_color)
         self.sprites.draw(surface)
+
         self.ui_manager.draw(surface)
 
     def transition_update(self) -> None:
