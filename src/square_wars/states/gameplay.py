@@ -820,7 +820,8 @@ class Gameplay:
                 self.unpause()
         elif self.state in {self.STATE_VICTORY, self.STATE_DEFEAT}:
             if self.scoreboard.done:
-                raise NotImplementedError("Matt go back to the main menu somehow.")
+                pygame.event.post(pygame.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
+                pygame.event.post(pygame.Event(pygame.KEYUP, key=pygame.K_ESCAPE))
         self.hud.update()
 
     def draw(self, surface=None) -> None:
