@@ -1,9 +1,12 @@
 import queue
 import pygame
 import random
+import math
 
 from . import common
 from . import settings
+from . import level
+from . import timer
 
 COMMAND_UP: int = 0
 COMMAND_STOP_UP: int = 1
@@ -14,7 +17,16 @@ COMMAND_STOP_LEFT: int = 5
 COMMAND_RIGHT: int = 6
 COMMAND_STOP_RIGHT: int = 7
 COMMAND_SHOOT: int = 8
+COMMAND_STRAFE: int = 9
+COMMAND_STOP_STRAFE: int = 10
 
+directions = {(0, -1): COMMAND_UP, (0, 1): COMMAND_DOWN, (-1, 0): COMMAND_LEFT, (1, 0): COMMAND_RIGHT}
+stops = {
+            COMMAND_UP: COMMAND_STOP_UP,
+            COMMAND_DOWN: COMMAND_STOP_DOWN,
+            COMMAND_LEFT: COMMAND_STOP_LEFT,
+            COMMAND_RIGHT: COMMAND_STOP_RIGHT,
+        }
 
 class Command:
     def __init__(self, command_name: int):
@@ -109,6 +121,9 @@ class InputControllerB(InputControllerA):
 class DumbAIController(Controller):
     def __init__(self, dumbness=8):
         super().__init__()
+        self.running_from = None
+        self.running_timer = timer.Timer(3)
+        self.running_timer.end()
         self.random_latency = dumbness  # increasing this slows the AI down
         self.pathfind_queue = queue.Queue()
         self.initial_frame = True
@@ -122,6 +137,7 @@ class DumbAIController(Controller):
         self.pathfind_queue = queue.Queue()
 
     def pathfind(self) -> bool:
+        # these variables are used no matter what state the AI is in
         # find nearest target square using BFS
         x, y = int(self.sprite.rect.x / 8), int(self.sprite.rect.y / 8)
         frontier = queue.Queue()
@@ -139,15 +155,8 @@ class DumbAIController(Controller):
                 if next not in came_from:
                     frontier.put(next)
                     came_from[next] = current
-                    square = grid.get_sprite_by_coordinate(*next)
-                    if square.team in self.target_teams:
-                        for player in players.sprites():
-                            if player is self:
-                                continue
-                            if square.rect.collidepoint(player.rect.center):
-                                break
-                        else:
-                            target_position = next
+                    if self.is_valid_target(*next):
+                        target_position = next
         if target_position is None:
             return False
         # contruct path of coordinates to that square
@@ -159,13 +168,6 @@ class DumbAIController(Controller):
         path.reverse()
         # convert path of coordinates to commands
         current = (x, y)
-        directions = {(0, -1): COMMAND_UP, (0, 1): COMMAND_DOWN, (-1, 0): COMMAND_LEFT, (1, 0): COMMAND_RIGHT}
-        stops = {
-            COMMAND_UP: COMMAND_STOP_UP,
-            COMMAND_DOWN: COMMAND_STOP_DOWN,
-            COMMAND_LEFT: COMMAND_STOP_LEFT,
-            COMMAND_RIGHT: COMMAND_STOP_RIGHT,
-        }
         for coord in path:
             direction = directions[coord[0] - current[0], coord[1] - current[1]]
             self.pathfind_queue.put(direction)
@@ -173,21 +175,58 @@ class DumbAIController(Controller):
             current = coord
         return True
 
+    def get_target_player(self):
+        target = None
+        for player in common.current_state.players.sprites():
+            if player.team != self.sprite.team:
+                target = player
+                break
+        return target
+
+    def is_valid_target(self, x, y):
+        square = common.current_state.squares.get_sprite_by_coordinate(x, y)
+        if self.running_timer.time_left:
+            return common.current_state.squares.is_clear_position(x, y)
+        if self.sprite.powerup is None:
+            return square.team in self.target_teams and square.occupant is None
+        if self.sprite.powerup.type in {level.POWERUP_GUN, level.POWERUP_GASCAN}:
+            target = self.get_target_player()
+            if target is not None:
+                return int(target.rect.x / 8) == x and int(target.rect.y / 8) == y
+        return True  # default to random walk if you don't know what to do
+
     def update(self) -> None:
-        if self.sprite.powerup is not None:
-            self.command_queue.put(Command(COMMAND_SHOOT))
+        self.running_timer.update()
         if (
             self.sprite.aligned
             and common.current_state.squares.get_sprite_by_coordinate(
                 int(self.sprite.rect.x / 8), int(self.sprite.rect.y / 8)
             ).team
             in self.target_teams
+            and not self.running_timer.time_left
         ):
             return
         if self.initial_frame:
             self.pathfind()
             self.command_queue.put(Command(self.pathfind_queue.get()))
             self.initial_frame = False
+        if self.sprite.powerup is not None and self.sprite.powerup.type == level.POWERUP_GUN:
+            tolerance = 4
+            tx, ty = self.get_target_player().rect.center
+            sx, sy = self.sprite.rect.center
+            dx = sx - tx
+            dy = sy - ty
+            if abs(dx) < tolerance:
+                if self.sprite.facing[1] * dy < 0:  # returns True if they have the same sign
+                    self.command_queue.put(Command(COMMAND_SHOOT))
+            if abs(dy) < tolerance:
+                if self.sprite.facing[0] * dx < 0:
+                    self.command_queue.put(Command(COMMAND_SHOOT))
+        if self.sprite.powerup is not None and self.sprite.powerup.type == level.POWERUP_GASCAN:
+            if (pygame.Vector2(self.get_target_player().rect.center) - self.sprite.rect.center).length_squared() <= 96:
+                self.command_queue.put(Command(COMMAND_SHOOT))
+                self.running_from = self.sprite.rect.center
+                self.running_timer.restart()
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
         if self.sprite.aligned and not self.sprite.speeding_up and not random.randint(0, self.random_latency):

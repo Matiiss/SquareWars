@@ -58,7 +58,7 @@ TUTORIAL_GUN = Level(
 
 TUTORIAL_GASCAN = Level(
     remark="Use a\nGAS CAN\nand run.\nBOOM!",
-    powerups=(POWERUP_GUN, POWERUP_GASCAN),
+    powerups=(POWERUP_GASCAN,),
     ai_dumbness=10,
     world="""
 1.......
