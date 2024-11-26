@@ -81,6 +81,7 @@ class Player(pygame.sprite.DirtySprite):
         self.speeding_up = False
         self.blink_timer = timer.Timer(0.1)
         self.blink_on = False
+        self.strafing = False
         self.align_flag = False
         self.powerup = None
         self.spawn_point = self.rect.topleft
@@ -162,7 +163,7 @@ class Player(pygame.sprite.DirtySprite):
             self.whacked = True
             self.whacked_timer.restart()
             common.current_state.kos[self.team] += 1
-            self.speedup_timer.end()
+            self.speeding_up = False
             self.motion = [0, 0]
 
     def update_visuals(self):
@@ -188,6 +189,7 @@ class Player(pygame.sprite.DirtySprite):
     def update(self) -> None:
         self.update_visuals()
         if not self.whacked:
+            do_shoot = False
             # Do command reading in 2 stages
             # Stage 1: realtime, cache non-realtime commands
             self.controller.update()
@@ -196,7 +198,7 @@ class Player(pygame.sprite.DirtySprite):
                 if next_command.command_name == command.COMMAND_SHOOT:
                     print("pew pew")
                     if self.powerup:
-                        self.powerup.use()
+                        do_shoot = True  # defer this action until later in case other actions happen this frame
                 else:
                     self.command_queue.put(next_command)
             # Stage 2: evaluate motion commands only when player is aligned with the grid
@@ -206,8 +208,14 @@ class Player(pygame.sprite.DirtySprite):
                 while self.command_queue.qsize():
                     next_command = self.command_queue.get()
                     match next_command:
+                        case command.Command(command_name=command.COMMAND_STRAFE):
+                            self.strafing = True
+                        case command.Command(command_name=command.COMMAND_STOP_STRAFE):
+                            self.strafing = False
+                        
                         case command.Command(command_name=command.COMMAND_UP):
                             self.moving[1] -= 1
+        
                         case command.Command(command_name=command.COMMAND_STOP_UP) if self.moving[1] < 0:
                             self.moving[1] += 1
 
@@ -227,13 +235,20 @@ class Player(pygame.sprite.DirtySprite):
                             self.moving[0] -= 1
             self.moving[0] = pygame.math.clamp(self.moving[0], -1, 1)
             self.moving[1] = pygame.math.clamp(self.moving[1], -1, 1)
-            speed = self.SPEED
-            if self.speeding_up:
-                speed = self.SPEEDY_SPEED
             # state handling for visuals
             if self.moving != last_moving and pygame.Vector2(last_moving):
                 self.last_moving = last_moving
+            # do the shoot that was deferred until later
+            if do_shoot:
+                self.powerup.use()
             # actual motion
+            if self.strafing:
+                self.moving = [0, 0]
+            if self.moving[0] and self.moving[1]:
+                self.moving = [self.moving[0], 0]
+            speed = self.SPEED
+            if self.speeding_up:
+                speed = self.SPEEDY_SPEED
             if pygame.Vector2(self.moving):
                 self.velocity = pygame.Vector2(self.moving)
                 self.velocity.scale_to_length(speed)
@@ -285,6 +300,7 @@ class Player(pygame.sprite.DirtySprite):
 class Speedup(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.type = level.POWERUP_SPEEDUP
         self.dirty = 2
         self.layer = 2
         self.rect = pygame.FRect(pos, (8, 8))
@@ -330,6 +346,7 @@ class Speedup(pygame.sprite.DirtySprite):
 class ShotGun(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.type = level.POWERUP_GUN
         self.dirty = 2
         self.layer = 4
         self.image = assets.images["gun"]
@@ -364,6 +381,7 @@ class ShotGun(pygame.sprite.DirtySprite):
 class GasCan(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
+        self.type = level.POWERUP_GASCAN
         self.dirty = 2
         self.layer = 4
         frames = utils.get_sprite_sheet(assets.images["gascan"])
@@ -414,6 +432,7 @@ class GasCan(pygame.sprite.DirtySprite):
 
     def use(self):
         common.current_state.powerups.add(self)
+        self.player.dequip_powerup()
         self.rect.center = self.player.rect.center
         self.anim = self.anim_dict["lit"]
         self.state = "lit"
@@ -422,6 +441,7 @@ class GasCan(pygame.sprite.DirtySprite):
 class Barbwire(pygame.sprite.DirtySprite):
     def __init__(self, position: tuple[int, int], owner=None):
         super().__init__()
+        self.type = level.POWERUP_BARBWIRE
         self.dirty = 2
         self.layer = 4
         self.live_timer = timer.Timer(7)
@@ -626,14 +646,14 @@ class Gameplay:
         level.POWERUP_GASCAN: GasCan,
         level.POWERUP_GUN: ShotGun,
         level.POWERUP_BARBWIRE: Barbwire,
-        level.POWERUP_TORCH: Barbwire  # FOR NOW...
+        level.POWERUP_TORCH: Barbwire,  # FOR NOW...
     }
 
     def __init__(self):
         self.level_index = 0
         # timer
         self.timer = timer.Timer(64)
-        self.powerup_timer = timer.Timer(5)
+        self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
         # handles level switch
         self.state = self.STATE_START
@@ -721,7 +741,9 @@ class Gameplay:
         self.transition_easers: dict[Any, easings.EasyScalar] = {}
 
     def get_winner(self):
-        return list(sorted((settings.TEAM_1, settings.TEAM_2), key=lambda x: self.get_square_count(x) - self.get_ko_count(x)))[-1]
+        return list(
+            sorted((settings.TEAM_1, settings.TEAM_2), key=lambda x: self.get_square_count(x) - self.get_ko_count(x))
+        )[-1]
 
     def get_square_count(self, team):
         count = 0
@@ -753,7 +775,7 @@ class Gameplay:
             self.powerup_timer.update()
             if (not self.powerup_timer.time_left) and self.level.powerups:
                 self.powerup_timer.restart()
-                while True:
+                for i in range(30):
                     spot = (random.randint(0, 7), random.randint(0, 7))
                     if self.can_put_powerup_in_spot(spot):
                         break
