@@ -53,10 +53,14 @@ class Smoke(pygame.sprite.Sprite):
 
 class MainMenu:
     caption_string = "Main Menu"
+    day_color = pygame.color.Color("#0098dc")
+    night_color = pygame.color.Color("#1a1932")
+    day_length = 10
 
     def __init__(self):
         pygame.mixer.music.load(assets.ost_path("SquareWars"))
         pygame.mixer.music.play()
+        self.caption_string = ""
         self.ui_manager = ui.UIManager()
         self.sprites = pygame.sprite.Group()
         self.sprites.add(Cloud(position=(0, 8)))
@@ -79,6 +83,7 @@ class MainMenu:
 
         self.bg_image = assets.images["menu_bg"].copy()
         self.mmm = self.bg_image.get_at((1, 0))
+        self.time = 0
 
         pygame.mixer.music.load(assets.ost_path("SquareWars"))
         pygame.mixer.music.play(loops=-1)
@@ -86,6 +91,7 @@ class MainMenu:
         self.transition_easers: dict[Any, easings.EasyVec] = {}
 
     def update(self) -> None:
+        self.time += common.dt
         self.sprites.update()
         self.ui_manager.update()
         self.smoke_timer.update()
@@ -97,12 +103,13 @@ class MainMenu:
             self.smoke_timer = timer.Timer(random.random() * 0.5 + 0.5)
 
     def draw(self, surface=None) -> None:
-        # common.screen.blit(assets.images["menu_bg"], (0, 0))
         if surface is None:
             surface = common.screen
-
-        surface.fill(self.mmm)
-        surface.blit(self.bg_image, (0, 0))
+        # day/night cycle
+        x = self.time / 5  # five seconds/day (and /night, /dawn, /dusk)
+        lerp_value = pygame.math.clamp((abs((x % 4) - 2) - 1) + (abs(((x - 1) % 4) - 2)) / 2, 0, 1)
+        surface.fill(self.night_color.lerp(self.day_color, lerp_value))
+        common.screen.blit(assets.images["menu_bg"], (0, 0))
         self.sprites.draw(surface)
         self.ui_manager.draw(surface)
 
