@@ -171,6 +171,7 @@ DEATH = Level(
 )
 
 LEVELS = (
+    BOMBERMAN,
     TUTORIAL,
     TUTORIAL_GUN,
     TUTORIAL_GASCAN,

@@ -39,6 +39,7 @@ class Explosion(pygame.sprite.DirtySprite):
     def __init__(self, pos: tuple[int, int]):
         super().__init__()
         self.layer = 3
+        common.current_state.explosions.add(self)
         self.rect = pygame.FRect(pos, (8, 8))
         self.anim = animation.NoLoopAnimation(utils.get_sprite_sheet(assets.images["explosion"]))
         self.image = self.anim.image
@@ -613,7 +614,7 @@ class FOV(pygame.sprite.DirtySprite):
         self.dirty = 2
         self.layer = 10  # goes over EVERYTHING
         self.rect = pygame.Rect(0, 0, 64, 64)
-        self.player = player
+        self.targets = [player]
         self.surface = pygame.Surface((64, 64)).convert()
         self.fov_image = assets.images["fov"]
         self.fov_rect = self.fov_image.get_rect()
@@ -622,8 +623,9 @@ class FOV(pygame.sprite.DirtySprite):
     @property
     def image(self):
         self.surface.fill("#000000")
-        self.fov_rect.center = self.player.rect.center
-        self.surface.blit(self.fov_image, self.fov_rect)
+        for target in self.targets + list(common.current_state.explosions.sprites()):
+            self.fov_rect.center = target.rect.center
+            self.surface.blit(self.fov_image, self.fov_rect, None, pygame.BLEND_RGB_MAX)
         return self.surface
 
     def update_visuals(self):
@@ -685,6 +687,7 @@ class Gameplay:
         self.blanks = pygame.sprite.Group()
         self.team_one_squares = pygame.sprite.Group()
         self.team_two_squares = pygame.sprite.Group()
+        self.explosions = pygame.sprite.Group()
         # spawn grid
         y = 0
         x = 0
