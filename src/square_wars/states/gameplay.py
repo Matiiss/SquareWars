@@ -282,8 +282,8 @@ class Player(pygame.sprite.DirtySprite):
             if not pygame.Rect((0, 0, 64, 64)).contains(self.rect):
                 moved = True
             if moved:
-                self.controller.on_motion_input()
                 self.speeding_up = False
+                self.controller.on_motion_input()
             self.rect.clamp_ip((0, 0, 64, 64))
             self.blink_timer.update()
             if not self.blink_timer.time_left:
@@ -373,7 +373,7 @@ class ShotGun(pygame.sprite.DirtySprite):
                     common.current_state.powerups.remove(self)
                     assets.sfx["pickup"].play()
         else:
-            self.rect.center = self.player.rect.midbottom
+            self.rect.center = self.player.rect.center
 
     def use(self):
         assets.sfx["gunshot"].play()
@@ -421,7 +421,7 @@ class GasCan(pygame.sprite.DirtySprite):
         if self.state == "idle":
             if self.player is None:
                 for player in common.current_state.players:
-                    if self.rect.collidepoint(player.rect.center) and player.aligned and not player.whacked_timer.time_left:
+                    if self.rect.collidepoint(player.rect.center) and player.aligned and not player.whacked:
                         common.current_state.powerups.remove(self)
                         assets.sfx["pickup"].play()
                         player.set_powerup(self)
@@ -463,7 +463,7 @@ class Barbwire(pygame.sprite.DirtySprite):
 
     def update(self):
         for player in common.current_state.players:
-            if self.rect.collidepoint(player.rect.center) and player.aligned and player.whacked_timer.time_left:
+            if self.rect.collidepoint(player.rect.center) and player.aligned and not player.whacked:
                 if self.live and player is not self.owner:
                     player.whack()
                 if not self.live:
