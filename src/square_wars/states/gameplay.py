@@ -100,7 +100,6 @@ class Player(pygame.sprite.DirtySprite):
             (-1, 1): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}"]), flip_x=True),
             (-1, 0): animation.Animation(utils.get_sprite_sheet(assets.images[f"Mr{color}"]), flip_x=True),
         }
-
         self.controller.register_sprite(self)
         self.blank_image = pygame.Surface((0, 0))
         self.target_teams = {
@@ -174,13 +173,10 @@ class Player(pygame.sprite.DirtySprite):
             anim.update()
         self.ghost_anim.update()
         self.particle_timer.update()
-        if not self.whacked and pygame.Vector2(self.moving) and not self.particle_timer.time_left:
+        if not self.whacked and (pygame.Vector2(self.moving) and not self.particle_timer.time_left) or self.speeding_up:
             self.particle_timer.restart()
             lower_bound = 5
             upper_bound = 6
-            if self.speeding_up:
-                lower_bound = 13
-                upper_bound = 17
             for particle in particles.particle_splash(
                 self.rect.center,
                 self.layer - 1,
