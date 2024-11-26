@@ -143,6 +143,22 @@ class Image:
         self.rect = image.get_rect(topleft=position)
 
 
+class DayNightBG:
+
+    def __init__(self):
+        self.position = pygame.Vector2()
+        self.rect = pygame.Rect(0, 0, 64, 64)
+        self.image = pygame.Surface((64, 64)).convert()
+        self.bg_image = assets.images["menu_bg"]
+        self.time = 0
+        
+    def update(self):
+        self.time += common.dt
+        # add two 90 degree out-of-phase triangle waves to make a trapezoid
+        x = self.time / 5  # five seconds/day (and /night, /dawn, /dusk)
+        self.lerp_value = pygame.math.clamp((abs((x % 4) - 2) - 1) + (abs(((x - 1) % 4) - 2)) / 2, 0, 1)
+        self.image.fill
+
 class Button:
     def __init__(
         self,

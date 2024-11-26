@@ -67,3 +67,20 @@ class ScoreBoard(pygame.sprite.Sprite):
             ):
                 self.leaving = True
                 self.down_timer.restart()
+
+
+class Countdown(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.rect = pygame.Rect(0, 0, 64, 64)
+        self.timer = timer.Timer(3)
+        self.frames = [0] + list(reversed(utils.get_sprite_sheet(assets.images["countdown"], (64, 64))))
+        self.image = self.frames[-1]
+        self.done = False
+
+    def update(self):
+        self.timer.update()
+        self.image = self.frames[int(self.timer.time_left) + 1]
+        if not self.timer.time_left:
+            self.done = True
+            self.kill()

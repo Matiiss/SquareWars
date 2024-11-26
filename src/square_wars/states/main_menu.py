@@ -53,10 +53,35 @@ class Smoke(pygame.sprite.Sprite):
 
 class MainMenu:
     caption_string = "Main Menu"
+    day_color = pygame.color.Color("#0098dc")
+    night_color = pygame.color.Color("#1a1932")
+    day_window_color = pygame.color.Color("#131313")
+    night_window_color = pygame.color.Color("#ffeb57")
+    # that's right - I hardcoded individual pixel coordinates
+    window_coordinates = (
+        (5, 42),
+        (4, 43),
+        (5, 43),
+        (6, 43),
+        (6, 46),
+        (7, 46),
+        (6, 47),
+        (7, 47),
+        (59, 56),
+        (58, 57),
+        (59, 57),
+        (60, 57),
+        (60, 60),
+        (61, 60),
+        (60, 61),
+        (61, 61),
+    )
+    day_length = 10
 
     def __init__(self):
         pygame.mixer.music.load(assets.ost_path("SquareWars"))
         pygame.mixer.music.play()
+        self.caption_string = ""
         self.ui_manager = ui.UIManager()
         self.sprites = pygame.sprite.Group()
         self.sprites.add(Cloud(position=(0, 8)))
@@ -79,6 +104,7 @@ class MainMenu:
 
         self.bg_image = assets.images["menu_bg"].copy()
         self.mmm = self.bg_image.get_at((1, 0))
+        self.time = 0
 
         pygame.mixer.music.load(assets.ost_path("SquareWars"))
         pygame.mixer.music.play(loops=-1)
@@ -86,6 +112,7 @@ class MainMenu:
         self.transition_easers: dict[Any, easings.EasyVec] = {}
 
     def update(self) -> None:
+        self.time += common.dt
         self.sprites.update()
         self.ui_manager.update()
         self.smoke_timer.update()
@@ -97,13 +124,20 @@ class MainMenu:
             self.smoke_timer = timer.Timer(random.random() * 0.5 + 0.5)
 
     def draw(self, surface=None) -> None:
-        # common.screen.blit(assets.images["menu_bg"], (0, 0))
         if surface is None:
             surface = common.screen
-
-        surface.fill(self.mmm)
-        surface.blit(self.bg_image, (0, 0))
+        # day/night cycle
+        x = self.time / 15  # fifteen seconds/day (and /night, /dawn, /dusk)
+        lerp_value = pygame.math.clamp((abs((x % 4) - 2) - 1) + (abs(((x - 1) % 4) - 2)) / 2, 0, 1)
+        # sky
+        surface.fill(self.night_color.lerp(self.day_color, lerp_value))
+        common.screen.blit(assets.images["menu_bg"], (0, 0))
+        # windows
+        window_color = self.night_window_color.lerp(self.day_window_color, lerp_value)
+        for coord in self.window_coordinates:
+            surface.set_at(coord, window_color)
         self.sprites.draw(surface)
+
         self.ui_manager.draw(surface)
 
     def transition_update(self) -> None:

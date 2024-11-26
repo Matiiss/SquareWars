@@ -134,7 +134,12 @@ class DumbAIController(Controller):
         self.target_teams.remove(self.sprite.team)
 
     def on_motion_input(self):
+        self.command_queue.put((Command(COMMAND_STOP_UP)))
+        self.command_queue.put((Command(COMMAND_STOP_DOWN)))
+        self.command_queue.put((Command(COMMAND_STOP_LEFT)))
+        self.command_queue.put((Command(COMMAND_STOP_RIGHT)))
         self.pathfind_queue = queue.Queue()
+        self.pathfind()
 
     def pathfind(self) -> bool:
         # these variables are used no matter what state the AI is in

@@ -69,6 +69,7 @@ def load_assets():
             "guiWoodBG": load_image("guiWoodBG"),
             "clouds": load_image("clouds"),
             "fov": load_image("fov"),
+            "countdown": load_image("countdown"),
         }
     )
     sfx.update(
