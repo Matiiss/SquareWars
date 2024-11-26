@@ -190,11 +190,7 @@ class DumbAIController(Controller):
             self.initial_frame = False
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
-        if (
-            self.sprite.aligned
-            and not self.sprite.speeding_up
-            and not random.randint(0, self.random_latency)
-        ):
+        if self.sprite.aligned and not self.sprite.speeding_up and not random.randint(0, self.random_latency):
             go = True
             if not self.pathfind_queue.qsize():
                 go = self.pathfind()

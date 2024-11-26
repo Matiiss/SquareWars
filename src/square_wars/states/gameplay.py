@@ -626,7 +626,7 @@ class Gameplay:
         level.POWERUP_GASCAN: GasCan,
         level.POWERUP_GUN: ShotGun,
         level.POWERUP_BARBWIRE: Barbwire,
-        level.POWERUP_TORCH: Barbwire  # FOR NOW...
+        level.POWERUP_TORCH: Barbwire,  # FOR NOW...
     }
 
     def __init__(self):
@@ -721,7 +721,9 @@ class Gameplay:
         self.transition_easers: dict[Any, easings.EasyScalar] = {}
 
     def get_winner(self):
-        return list(sorted((settings.TEAM_1, settings.TEAM_2), key=lambda x: self.get_square_count(x) - self.get_ko_count(x)))[-1]
+        return list(
+            sorted((settings.TEAM_1, settings.TEAM_2), key=lambda x: self.get_square_count(x) - self.get_ko_count(x))
+        )[-1]
 
     def get_square_count(self, team):
         count = 0

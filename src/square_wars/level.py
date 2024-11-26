@@ -23,7 +23,7 @@ class Level:
     world: str
     fov: bool = False
 
-    
+
 TUTORIAL = Level(
     remark="Move:\n WASD\nPause:\n e",
     powerups=(POWERUP_SPEEDUP,),
@@ -53,7 +53,7 @@ TUTORIAL_GUN = Level(
 .......#
 .#...#%%
 ......%2
-"""
+""",
 )
 
 TUTORIAL_GASCAN = Level(
@@ -85,7 +85,7 @@ TWO_OPPONENT = Level(
 ....#...
 .#.....#
 .#.....2
-"""
+""",
 )
 
 DUEL = Level(
@@ -101,7 +101,7 @@ DUEL = Level(
 .#....#.
 .##..##.
 .......2
-"""
+""",
 )
 
 DARK = Level(
@@ -118,7 +118,7 @@ DARK = Level(
 ........
 .#.#.#2#
 """,
-fov=True
+    fov=True,
 )
 
 BOMBERMAN = Level(
@@ -135,7 +135,7 @@ BOMBERMAN = Level(
 .%.%.%.%
 %.%.%.%2
 """,
-fov=True
+    fov=True,
 )
 
 TIME_TRIALS = Level(
@@ -151,7 +151,7 @@ TIME_TRIALS = Level(
 ....#...
 .####.#.
 ......#2
-"""
+""",
 )
 
 DEATH = Level(
@@ -167,7 +167,7 @@ DEATH = Level(
 .#....#.
 .##%%##.
 2......2
-"""
+""",
 )
 
 LEVELS = (
