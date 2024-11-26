@@ -160,6 +160,9 @@ class Player(pygame.sprite.DirtySprite):
     def whack(self):
         if not self.whacked:
             assets.sfx["whack"].play()
+            if self.powerup is not None:
+                self.powerup.kill()
+                self.dequip_powerup()
             self.whacked = True
             self.whacked_timer.restart()
             common.current_state.kos[self.team] += 1
@@ -294,6 +297,7 @@ class Player(pygame.sprite.DirtySprite):
             )
             if self.rect.topleft == self.spawn_point and not self.whacked_timer.time_left:
                 self.ghost_anim.restart()
+                self.controller.on_motion_input()
                 self.whacked = False
 
 
@@ -363,7 +367,7 @@ class ShotGun(pygame.sprite.DirtySprite):
         self.update_visuals()
         if self.player is None:
             for player in common.current_state.players:
-                if self.rect.collidepoint(player.rect.center) and player.aligned:
+                if self.rect.collidepoint(player.rect.center) and player.aligned and not player.whacked:
                     player.set_powerup(self)
                     self.player = player
                     common.current_state.powerups.remove(self)
@@ -417,7 +421,7 @@ class GasCan(pygame.sprite.DirtySprite):
         if self.state == "idle":
             if self.player is None:
                 for player in common.current_state.players:
-                    if self.rect.collidepoint(player.rect.center) and player.aligned:
+                    if self.rect.collidepoint(player.rect.center) and player.aligned and not player.whacked_timer.time_left:
                         common.current_state.powerups.remove(self)
                         assets.sfx["pickup"].play()
                         player.set_powerup(self)
@@ -459,7 +463,7 @@ class Barbwire(pygame.sprite.DirtySprite):
 
     def update(self):
         for player in common.current_state.players:
-            if self.rect.collidepoint(player.rect.center) and player.aligned:
+            if self.rect.collidepoint(player.rect.center) and player.aligned and player.whacked_timer.time_left:
                 if self.live and player is not self.owner:
                     player.whack()
                 if not self.live:
