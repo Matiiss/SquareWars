@@ -642,6 +642,7 @@ class Gameplay:
     STATE_PAUSE = 4
     STATE_VICTORY = 5
     STATE_DEFEAT = 6
+    STATE_COUNTDOWN = 7
 
     POWERUPS = {
         level.POWERUP_SPEEDUP: Speedup,
@@ -657,6 +658,7 @@ class Gameplay:
         self.timer = timer.Timer(64)
         self.powerup_timer = timer.Timer(2)
         self.caption_string = "TIME: 64"
+        self.countdown_timer = timer.Timer(3)
         # handles level switch
         self.state = self.STATE_START
         self.scoreboard = None
@@ -768,6 +770,7 @@ class Gameplay:
         return True
 
     def update(self) -> None:
+        self.countdown_timer.update()
         if self.state == self.STATE_GAMEPLAY:
             if not self.timer.time_left:
                 self.state = self.STATE_END
@@ -790,9 +793,14 @@ class Gameplay:
                     self.pause()
         elif self.state == self.STATE_START:
             if self.scoreboard.done:
-                self.state = self.STATE_GAMEPLAY
+                self.state = self.STATE_COUNTDOWN
+                self.scoreboard = scoreboard.Countdown()
+                self.hud.add(self.scoreboard)
                 pygame.mixer.music.load(assets.ost_path("SquareWarsBattle"))
                 pygame.mixer.music.play()
+        elif self.state == self.STATE_COUNTDOWN:
+            if self.scoreboard.done:
+                self.state = self.STATE_GAMEPLAY
         elif self.state == self.STATE_END:
             if self.scoreboard.done:
                 self.level_index += 1
