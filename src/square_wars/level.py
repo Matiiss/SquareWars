@@ -249,4 +249,5 @@ LEVELS = (
     BOMBERMAN,
     PUZZLE,
     TIME_TRIALS,
+    DEATH,
 )
