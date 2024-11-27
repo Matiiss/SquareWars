@@ -50,7 +50,6 @@ async def run():
                 if event.key == pygame.K_ESCAPE:
                     if not settings.PYGBAG and isinstance(common.current_state, states.MainMenu):
                         pygame.quit()
-                        raise SystemExit()
                     common.current_state = states.MainMenu()
             elif event.type == event_types.SWITCH_TO_GAMEPLAY:
                 common.current_state = states.Gameplay()

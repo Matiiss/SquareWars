@@ -41,7 +41,7 @@ TUTORIAL = Level(
 )
 
 TUTORIAL_GUN = Level(
-    remark="Use pickup:\n q.\nDon't get\nshot!",
+    remark="Use pickup\n with 'q'.\nDon't get\nshot!",
     powerups=[POWERUP_SPEEDUP, POWERUP_GUN],
     ai_dumbness=20,
     world="""
