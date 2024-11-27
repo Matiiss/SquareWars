@@ -1,3 +1,5 @@
-async def run():
+import asyncio
+
+def run():
     from . import main
-    await main.run()
+    asyncio.run(main.run())
