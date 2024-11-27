@@ -174,7 +174,7 @@ class DayNightBG:
 
 class Label(Widget):
     config = {
-        "fg": "#ffece3",
+        "fg": "#f9e6cf",
         "bg": "#cc6063",
         "hover_fg": "",
         "hover_bg": "",
@@ -279,6 +279,7 @@ class HorizontalSlider(Widget):
         step: int = 1,
         callback: callable = lambda _: None,
         initial_value: int = 50,
+        do_initial_callback: bool = True,
     ):
         self.min_value = min_value
         self.max_value = max_value
@@ -291,7 +292,9 @@ class HorizontalSlider(Widget):
         self.clicked = False
         self.prev_value = 0
 
+        self.do_initial_callback = do_initial_callback
         self.value = initial_value
+        self.do_initial_callback = True
 
     def update(self) -> None:
         for event in common.events:
@@ -315,8 +318,8 @@ class HorizontalSlider(Widget):
         return False
 
     def draw(self, surface: pygame.Surface) -> None:
-        pygame.draw.rect(surface, "#cc6063", self.rail)
-        pygame.draw.circle(surface, "#ffece3", (self.x, self.y), self.radius)
+        pygame.draw.rect(surface, "#f5555d", self.rail)
+        pygame.draw.circle(surface, "#f9e6cf", (self.x, self.y), self.radius)
 
     def clamp_rail(self, pos: tuple[int, int]) -> tuple[int, int]:
         x, y = pos
@@ -338,4 +341,5 @@ class HorizontalSlider(Widget):
         self.x = new_rel_pos + self.rail.left + self.radius
         value += self.min_value
         self.prev_value = value
-        self.callback(value)
+        if self.do_initial_callback:
+            self.callback(value)

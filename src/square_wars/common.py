@@ -2,6 +2,7 @@ import pygame
 
 from . import proto
 
+window: pygame.Window
 screen: pygame.Surface
 
 dt: float

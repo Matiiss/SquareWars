@@ -76,6 +76,8 @@ def load_assets():
             "clouds": load_image("clouds"),
             "fov": load_image("fov"),
             "countdown": load_image("countdown"),
+            "fullscreen_button": load_image("fullscreen_button"),
+            "back_button": load_image("back_button"),
         }
     )
     sfx.update(

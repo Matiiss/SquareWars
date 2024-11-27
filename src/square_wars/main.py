@@ -17,20 +17,18 @@ async def run():
 
     icon = assets.load_image_raw("icon")
     pygame.display.set_icon(icon)
-    common.screen = screen = pygame.display.set_mode(
-        settings.LOGICAL_SIZE, flags=settings.DISPLAY_FLAGS | pygame.HIDDEN
-    )
+    common.screen = pygame.display.set_mode(settings.LOGICAL_SIZE, flags=settings.DISPLAY_FLAGS | pygame.HIDDEN)
     common.clock = clock = pygame.Clock()
 
-    window = pygame.Window.from_display_module()
+    common.window = pygame.Window.from_display_module()
     if settings.FULLSCREEN:
-        window.set_fullscreen(True)
-    window.show()
+        common.window.set_fullscreen(True)
+    common.window.show()
     if not settings.PYGBAG:
         if any(settings.DISPLAY_FLAGS & flag for flag in [pygame.SCALED, pygame.OPENGL, pygame.DOUBLEBUF]):
-            renderer = pg_sdl2.Renderer.from_window(window)
+            renderer = pg_sdl2.Renderer.from_window(common.window)
         else:
-            renderer = pg_sdl2.Renderer(window)
+            renderer = pg_sdl2.Renderer(common.window)
         renderer.draw_color = "#391f21"
     # common.current_state = states.Gameplay()
     common.current_state = states.MainMenu()
@@ -48,17 +46,17 @@ async def run():
                 f"{settings.TITLE} | FPS: {clock.get_fps():.0f} | {common.current_state.caption_string}"
             )
 
-        screen.fill("black")
-        events = pygame.event.get()
-        common.events = list(events)
+        common.screen.fill("black")
+        common.events = pygame.event.get()
         for event in common.events:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if not settings.PYGBAG and isinstance(common.current_state, states.MainMenu):
-                        pygame.quit()
-                    common.current_state = states.MainMenu()
+                        running = False
+                    else:
+                        common.current_state = states.MainMenu()
             elif event.type == event_types.SWITCH_TO_GAMEPLAY:
                 common.current_state = states.Gameplay()
 
@@ -76,6 +74,12 @@ async def run():
         pygame.display.flip()
         await asyncio.sleep(0)
 
+    pygame.quit()
+
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except ValueError:
+        # I don't know how else to handle "a coroutine was expected, got None" (yet)
+        raise SystemExit from None
