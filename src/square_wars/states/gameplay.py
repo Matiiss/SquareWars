@@ -196,7 +196,6 @@ class Player(pygame.sprite.DirtySprite):
             while self.controller.command_queue.qsize():
                 next_command = self.controller.command_queue.get()
                 if next_command.command_name == command.COMMAND_SHOOT:
-                    print("pew pew")
                     if self.powerup:
                         do_shoot = True  # defer this action until later in case other actions happen this frame
                 else:
@@ -838,7 +837,7 @@ class Gameplay:
 
         # more hax
         screen = common.screen
-        common.screen = pygame.Surface(common.screen.size)
+        common.screen = pygame.Surface(common.screen.get_size())
         self.draw()
         self.____transition_image_original = self.____transition_image = common.screen
         self.____transition_image_alpha = 0
@@ -864,4 +863,4 @@ class Gameplay:
             common.current_state = self
 
     def transition_draw(self, dst: pygame.Surface) -> None:
-        dst.blit(self.____transition_image, self.____transition_image.get_rect(center=pygame.Vector2(dst.size) / 2))
+        dst.blit(self.____transition_image, self.____transition_image.get_rect(center=pygame.Vector2(dst.get_size()) / 2))

@@ -41,7 +41,7 @@ TUTORIAL = Level(
 )
 
 TUTORIAL_GUN = Level(
-    remark="Shoot:\nq\n",
+    remark="Use pickup\n with 'q'.\nDon't get\nshot!",
     powerups=[POWERUP_SPEEDUP, POWERUP_GUN],
     ai_dumbness=20,
     world="""
@@ -72,6 +72,22 @@ TUTORIAL_GASCAN = Level(
 """,
 )
 
+TUTORIAL_BARBWIRE = Level(
+    remark="Barbwire:\nsafe if you\ntouch it\nfirst.",
+    powerups=(POWERUP_BARBWIRE,),
+    ai_dumbness=7,
+    world="""
+2.#.#.#.
+........
+#.#.#.#.
+........
+#.#.#.#.
+........
+#.#.#.#.
+.......1
+"""
+)
+
 TWO_OPPONENT = Level(
     remark="One guy...\nToo easy.",
     powerups=(POWERUP_GUN, POWERUP_GASCAN, POWERUP_SPEEDUP),
@@ -90,8 +106,8 @@ TWO_OPPONENT = Level(
 
 DUEL = Level(
     remark="Unless...\nit's THIS\nguy!",
-    powerups=(POWERUP_GUN, POWERUP_SPEEDUP),
-    ai_dumbness=5,
+    powerups=(POWERUP_GUN, POWERUP_SPEEDUP, POWERUP_GASCAN),
+    ai_dumbness=0,
     world="""
 1.......
 .##..##.
@@ -122,7 +138,7 @@ DARK = Level(
 )
 
 BOMBERMAN = Level(
-    remark="Only\nBOMBS\nremain...",
+    remark="Gas-\nlightinng...",
     powerups=(POWERUP_GASCAN,),
     ai_dumbness=0,
     world="""
@@ -138,45 +154,100 @@ BOMBERMAN = Level(
     fov=True,
 )
 
+DOUBLE_TROUBLE = Level(
+    remark="Double\nTrouble",
+    powerups=(POWERUP_GUN, POWERUP_SPEEDUP, POWERUP_BARBWIRE, POWERUP_GASCAN),
+    ai_dumbness=20,
+    world="""
+........
+.##...#.
+.%%%%%#.
+...12...
+...21...
+.#%%%%%.
+.#...##.
+........
+"""
+)
+
 TIME_TRIALS = Level(
     remark="Are you\nFAST\nenough?",
     powerups=(POWERUP_GUN,),
-    ai_dumbness=2,
+    ai_dumbness=0,
     world="""
-1#......
+1.......
 .#.####.
 ...#....
-###.....
-.....###
+#.#.....
+.....#.#
 ....#...
 .####.#.
-......#2
+.......2
 """,
 )
 
 DEATH = Level(
-    remark="You won't\nbeat\nthis.",
+    remark="You won't\nbeat this.",
     powerups=(POWERUP_SPEEDUP, POWERUP_BARBWIRE, POWERUP_GASCAN, POWERUP_GUN),
-    ai_dumbness=15,
+    ai_dumbness=80,
     world="""
-1......2
-.##%%##.
-.#....#.
+1%%..%%2
+%##%%##%
+%#....#%
 .%....%.
 .%....%.
-.#....#.
-.##%%##.
-2......2
+%#....#%
+%##%%##%
+2%%..%%2
 """,
+    fov=False,
+)
+
+PUZZLE = Level(
+    remark="This one\nuses your\nbrain.",
+    powerups=(POWERUP_SPEEDUP, POWERUP_GASCAN, POWERUP_GUN, POWERUP_BARBWIRE),
+    ai_dumbness=0,
+    world="""
+1...1...
+##..##..
+.##...#.
+....#.#.
+###.###.
+..#...#.
+#.......
+..##2##.
+"""
+)
+
+NIGHT_CRAWLING = Level(
+    remark="Night\nCrawling",
+    powerups=(POWERUP_GASCAN, POWERUP_GUN, POWERUP_BARBWIRE),
+    ai_dumbness=5,
+    world="""
+........
+.....%..
+..2..%..
+........
+........
+....1...
+........
+..%.....
+""",
+    fov=True,
 )
 
 LEVELS = (
     TUTORIAL,
     TUTORIAL_GUN,
     TUTORIAL_GASCAN,
+    TUTORIAL_BARBWIRE,
     TWO_OPPONENT,
     DUEL,
+    NIGHT_CRAWLING,
+    DOUBLE_TROUBLE,
     DARK,
     BOMBERMAN,
+    PUZZLE,
     TIME_TRIALS,
+    DEATH,
 )

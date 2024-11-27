@@ -17,14 +17,14 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["pygame-ce==2.5.2"]
+dependencies = ["pygame-ce>=2.4.1"]
 
 [project.urls]
 Homepage = "https://github.com/Matiiss/SquareWars"
 Issues = "https://github.com/Matiiss/SquareWars/issues"
 
 [project.optional-dependencies]
-dev = ["ruff"]
+dev = ["ruff", "pygbag", "pyinstaller"]
 
 [project.gui-scripts]
 square-wars = "square_wars:run"

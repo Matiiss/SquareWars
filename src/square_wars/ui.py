@@ -1,7 +1,7 @@
 from typing import Protocol, runtime_checkable
 
 import pygame
-
+import math
 from . import common, assets
 
 
@@ -12,6 +12,7 @@ class UIManager:
         self.selectables: dict[str, Static | Widget] = {}
         self.selector_arrow = SelectorArrow()
         self._draw_excludes_once = set()
+        self.time = 0
 
     def add(self, widget, initial_selected=False, selector: str | None = None):
         if not initial_selected:
@@ -99,6 +100,8 @@ class UIManager:
         if self.selector_arrow.last_selection is not None:
             self.selector_arrow.last_selection.is_hovered = True
 
+        self.time += common.dt
+
     def draw(self, dst: pygame.Surface) -> None:
         for widget in self.widgets:
             if widget in self._draw_excludes_once:
@@ -111,7 +114,9 @@ class UIManager:
             dst.blit(widget.image, widget.rect)
 
         if self.selector_arrow.shown:
-            dst.blit(self.selector_arrow.image, self.selector_arrow.rect)
+            arrow_rect = self.selector_arrow.rect.copy()
+            arrow_rect.x += math.sin(self.time * 3) * 2
+            dst.blit(self.selector_arrow.image, arrow_rect)
 
 
 @runtime_checkable
@@ -191,7 +196,7 @@ class Button:
         position = self.position.copy()
 
         if self.is_hovered:
-            position.x += 2
+            position.x += 1
             # rect.width += 1
 
         rect.topleft = position

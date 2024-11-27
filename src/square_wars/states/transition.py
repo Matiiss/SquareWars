@@ -18,10 +18,10 @@ class Transition:
         self.next_state.transition_update()
 
     def draw(self) -> None:
-        current_surf = pygame.Surface(common.screen.size, flags=pygame.SRCALPHA)
+        current_surf = pygame.Surface(common.screen.get_size(), flags=pygame.SRCALPHA)
         self.current_state.transition_draw(current_surf)
 
-        next_surf = pygame.Surface(common.screen.size, flags=pygame.SRCALPHA)
+        next_surf = pygame.Surface(common.screen.get_size(), flags=pygame.SRCALPHA)
         self.next_state.transition_draw(next_surf)
 
         common.screen.blit(next_surf, (0, 0))

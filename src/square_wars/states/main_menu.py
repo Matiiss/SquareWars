@@ -179,7 +179,7 @@ class MainMenu:
         self.sprites.draw(surf)
         surf.blit(self.ui_manager["menu_title"].image, self.ui_manager["menu_title"].rect)
         surf.set_alpha(self.ui_manager["menu_title"].alpha)
-        dst.blit(surf)
+        dst.blit(surf, (0, 0))
         self.ui_manager.draw_exclude_once("menu_title")
         self.ui_manager.draw(dst)
 
