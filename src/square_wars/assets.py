@@ -16,6 +16,7 @@ images: dict[str, pygame.Surface] = {}
 sfx: dict[str, pygame.mixer.Sound] = {}
 fonts: dict[str, pygame.font.Font] = {}
 
+
 def image_path(path, extension="png"):
     return ASSETS_DIR / "images" / f"{path}.{extension}"
 
@@ -75,6 +76,8 @@ def load_assets():
             "clouds": load_image("clouds"),
             "fov": load_image("fov"),
             "countdown": load_image("countdown"),
+            "fullscreen_button": load_image("fullscreen_button"),
+            "back_button": load_image("back_button"),
         }
     )
     sfx.update(

@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from .. import timer, scoreboard, particles, assets, animation, common, command, settings, utils, level, easings
+from . import transition, main_menu
 
 
 def center_point_collide(sprite1, sprite2):
@@ -211,10 +212,10 @@ class Player(pygame.sprite.DirtySprite):
                             self.strafing = True
                         case command.Command(command_name=command.COMMAND_STOP_STRAFE):
                             self.strafing = False
-                        
+
                         case command.Command(command_name=command.COMMAND_UP):
                             self.moving[1] -= 1
-        
+
                         case command.Command(command_name=command.COMMAND_STOP_UP) if self.moving[1] < 0:
                             self.moving[1] += 1
 
@@ -863,4 +864,6 @@ class Gameplay:
             common.current_state = self
 
     def transition_draw(self, dst: pygame.Surface) -> None:
-        dst.blit(self.____transition_image, self.____transition_image.get_rect(center=pygame.Vector2(dst.get_size()) / 2))
+        dst.blit(
+            self.____transition_image, self.____transition_image.get_rect(center=pygame.Vector2(dst.get_size()) / 2)
+        )

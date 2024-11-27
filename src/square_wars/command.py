@@ -22,11 +22,12 @@ COMMAND_STOP_STRAFE: int = 10
 
 directions = {(0, -1): COMMAND_UP, (0, 1): COMMAND_DOWN, (-1, 0): COMMAND_LEFT, (1, 0): COMMAND_RIGHT}
 stops = {
-            COMMAND_UP: COMMAND_STOP_UP,
-            COMMAND_DOWN: COMMAND_STOP_DOWN,
-            COMMAND_LEFT: COMMAND_STOP_LEFT,
-            COMMAND_RIGHT: COMMAND_STOP_RIGHT,
-        }
+    COMMAND_UP: COMMAND_STOP_UP,
+    COMMAND_DOWN: COMMAND_STOP_DOWN,
+    COMMAND_LEFT: COMMAND_STOP_LEFT,
+    COMMAND_RIGHT: COMMAND_STOP_RIGHT,
+}
+
 
 class Command:
     def __init__(self, command_name: int):
@@ -234,11 +235,7 @@ class DumbAIController(Controller):
                 self.running_timer.restart()
         if self.sprite.half_aligned and self.pathfind_queue.qsize():
             self.command_queue.put(Command(self.pathfind_queue.get()))
-        if (
-            self.sprite.aligned
-            and not self.sprite.speeding_up
-            and not random.randint(0, self.random_latency)
-        ):
+        if self.sprite.aligned and not self.sprite.speeding_up and not random.randint(0, self.random_latency):
             go = True
             if not self.pathfind_queue.qsize():
                 go = self.pathfind()
