@@ -3,4 +3,4 @@ from . import main
 
 
 def run():
-    return main.run()
+    asyncio.run(main.run())
