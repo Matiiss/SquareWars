@@ -9,7 +9,8 @@ pyi.run([
     "run.py",
     "-n",
     "SquareWars",
-    "-y"
+    "--windowed",
+    "-y",
 ])
 
 export_direction = "SquareWarsBuild"
