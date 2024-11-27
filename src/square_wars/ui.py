@@ -6,14 +6,17 @@ from . import common, assets
 
 
 class UIManager:
-    def __init__(self):
+    def __init__(self, without_selector=False):
         self.widgets: list[Widget] = []
         self.static: list[Static] = []
         self.selectables: dict[str, Static | Widget] = {}
+        self.without_selector = without_selector
         self.selector_arrow = SelectorArrow()
         self._draw_excludes_once = set()
 
     def add(self, widget, initial_selected=False, selector: str | None = None):
+        if isinstance(widget, Button):
+            widget.without_thingy = self.without_selector
         if not initial_selected:
             self.widgets.append(widget)
         else:
@@ -86,6 +89,9 @@ class UIManager:
                 else:
                     widget.is_hovered = False
 
+        if self.without_selector:
+            selected = None
+
         if selected is not None:
             self.selector_arrow.rect.midright = pygame.Vector2(selected.collide_rect.midleft) - (
                 self.selector_arrow.dist,
@@ -102,6 +108,8 @@ class UIManager:
     def draw(self, dst: pygame.Surface) -> None:
         for widget in self.widgets:
             if widget in self._draw_excludes_once:
+                continue
+            if isinstance(widget, HorizontalSlider):
                 continue
             dst.blit(widget.image, widget.rect)
 
@@ -143,11 +151,57 @@ class Image:
         self.rect = image.get_rect(topleft=position)
 
 
+class Label(Widget):
+    config = {
+        "fg": "#ffece3",
+        "bg": "#cc6063",
+        "hover_fg": "",
+        "hover_bg": "",
+        "click_fg": "",
+        "click_bg": "",
+        "width": None,
+        "height": None,
+        "wraplength": None,
+        "font": None,  # welp
+        "padx": 0,
+        "pady": 0,
+        "border_width": 2,
+        "border_radius": 0,
+    }
+
+    def __init__(self, pos, text, e="center", config: dict | None = None, **kwargs):
+        config = type(self).config | kwargs if config is None else type(self).config | config | kwargs
+        for key, value in config.items():
+            setattr(self, key, value)
+
+        self.font = self.font or assets.fonts["silkscreen"]
+
+        prev_alignment = self.font.align
+        self.font.align = pygame.FONT_CENTER
+        text_surf = self.font.render(text, False, self.fg)
+        self.font.align = prev_alignment
+
+        self.width = self.width or text_surf.get_width() + self.padx * 2
+        self.height = self.height or text_surf.get_height() + self.pady * 2
+
+        self.image = pygame.Surface((self.width, self.height), flags=pygame.SRCALPHA)
+        self.size_rect = self.image.get_rect()
+        self.rect = self.image.get_rect(**{e: pos})
+
+        pygame.draw.rect(self.image, self.bg, self.size_rect, border_radius=self.border_radius)
+        self.image.blit(text_surf, text_surf.get_rect(center=self.size_rect.center))
+
+    def update(self):
+        pass
+
+
 class Button:
     def __init__(
         self,
         position,
-        image,
+        image: pygame.Surface,
+        e="topleft",
+        without_thingy=False,
         callback=lambda: None,
     ) -> None:
         self.position = pygame.Vector2(position)
@@ -155,6 +209,8 @@ class Button:
         self.callback = callback
         self.is_hovered = False
         self.is_pressed = False
+        self.e = e
+        self.without_thingy = without_thingy
 
     def update(self):
         for event in common.events:
@@ -174,11 +230,11 @@ class Button:
         rect = self.image.get_rect()
         position = self.position.copy()
 
-        if self.is_hovered:
+        if self.is_hovered and not self.without_thingy:
             position.x += 2
             # rect.width += 1
 
-        rect.topleft = position
+        setattr(rect, self.e, position)
         return rect
 
     @property
@@ -186,8 +242,79 @@ class Button:
         rect = self.image.get_rect()
         position = self.position.copy()
 
-        if self.is_hovered:
-            rect.width += 1
+        if self.is_hovered and not self.without_thingy:
+            rect.width += 2
 
-        rect.topleft = position
+        setattr(rect, self.e, position)
         return rect
+
+
+class HorizontalSlider(Widget):
+    def __init__(
+        self,
+        rect: pygame.Rect,
+        min_value: int = 0,
+        max_value: int = 100,
+        step: int = 1,
+        callback: callable = lambda _: None,
+        initial_value: int = 50,
+    ):
+        self.min_value = min_value
+        self.max_value = max_value
+        self.range = max_value - min_value
+        self.step = min(self.range, max(step, self.range // rect.width))
+        self.callback = callback
+        self.rail = rect.inflate(0, -0.8 * rect.height)
+        self.x, self.y = rect.center
+        self.radius = int(rect.width * 0.05)
+        self.clicked = False
+        self.prev_value = 0
+
+        self.value = initial_value
+
+    def update(self) -> None:
+        for event in common.events:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.collision(event.pos):
+                self.clicked = True
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.clicked:
+                self.clicked = False
+                value = self.value
+                if self.prev_value != value:
+                    self.prev_value = value
+
+            elif event.type == pygame.MOUSEMOTION and self.clicked:
+                self.x, self.y = self.clamp_rail(event.pos)
+                self.value = round(self.value / self.step) * self.step
+
+    def collision(self, pos: tuple[int, int]) -> bool:
+        mx, my = pos
+        dx, dy = abs(self.x - mx), abs(self.y - my)
+        if dx**2 + dy**2 <= self.radius**2:
+            return True
+        return False
+
+    def draw(self, surface: pygame.Surface) -> None:
+        pygame.draw.rect(surface, "#cc6063", self.rail)
+        pygame.draw.circle(surface, "#ffece3", (self.x, self.y), self.radius)
+
+    def clamp_rail(self, pos: tuple[int, int]) -> tuple[int, int]:
+        x, y = pos
+        new_x = max(self.rail.left + self.radius, min(x, self.rail.right - self.radius))
+        return new_x, self.rail.centery
+
+    @property
+    def value(self) -> int:
+        distance = self.x - (self.rail.left + self.radius)
+        rel_val = distance / (self.rail.width - 2 * self.radius)
+        value = self.min_value + round((self.range * rel_val) / self.step) * self.step
+        return value
+
+    @value.setter
+    def value(self, value: int) -> None:
+        value = value and round(value / self.step) * self.step - self.min_value
+        rel_val = value / self.range
+        new_rel_pos = round(rel_val * (self.rail.width - 2 * self.radius))
+        self.x = new_rel_pos + self.rail.left + self.radius
+        value += self.min_value
+        self.prev_value = value
+        self.callback(value)

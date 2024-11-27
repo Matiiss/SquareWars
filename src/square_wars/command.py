@@ -22,11 +22,12 @@ COMMAND_STOP_STRAFE: int = 10
 
 directions = {(0, -1): COMMAND_UP, (0, 1): COMMAND_DOWN, (-1, 0): COMMAND_LEFT, (1, 0): COMMAND_RIGHT}
 stops = {
-            COMMAND_UP: COMMAND_STOP_UP,
-            COMMAND_DOWN: COMMAND_STOP_DOWN,
-            COMMAND_LEFT: COMMAND_STOP_LEFT,
-            COMMAND_RIGHT: COMMAND_STOP_RIGHT,
-        }
+    COMMAND_UP: COMMAND_STOP_UP,
+    COMMAND_DOWN: COMMAND_STOP_DOWN,
+    COMMAND_LEFT: COMMAND_STOP_LEFT,
+    COMMAND_RIGHT: COMMAND_STOP_RIGHT,
+}
+
 
 class Command:
     def __init__(self, command_name: int):

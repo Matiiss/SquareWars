@@ -4,10 +4,9 @@ import pygame
 import random
 import math
 
-from .. import common, assets, ui, utils, easings, timer
+from .. import common, assets, ui, utils, easings, timer, settings
 
-from .transition import Transition
-from .gameplay import Gameplay
+from . import transition, gameplay
 
 
 class Cloud(pygame.sprite.Sprite):
@@ -68,13 +67,18 @@ class MainMenu:
                 position=(16, 20),
                 image=assets.images["play_button"],
                 callback=lambda: setattr(
-                    common, "current_state", Transition(current_state=self, next_state=Gameplay())
+                    common, "current_state", transition.Transition(current_state=self, next_state=gameplay.Gameplay())
                 ),
             ),
             initial_selected=True,
             selector="play_button",
         ).add(
-            ui.Button(position=(16, 32), image=assets.images["settings_button"]), selector="settings_button"
+            ui.Button(
+                position=(16, 32),
+                image=assets.images["settings_button"],
+                callback=lambda: setattr(common, "current_state", SettingsMenu()),
+            ),
+            selector="settings_button",
         ).add_static(ui.Image(position=(8, 3), image=assets.images["menu_title"]), selector="menu_title")
 
         self.bg_image = assets.images["menu_bg"].copy()
@@ -209,3 +213,99 @@ class MainMenu:
         self.transition_easers[s_button] = easings.EasyVec(
             ease, s_button.position, pygame.Vector2(s_button.position.x, s_button.position.y + dist), time_s
         )
+
+
+class SettingsMenu:
+    caption_string = "Settings"
+
+    def __init__(self):
+        super().__init__()
+        self.ui_manager = ui.UIManager(without_selector=True)
+
+        slider_rect = pygame.Rect(0, 0, 50, 8)
+        slider_rect.center = (settings.LOGICAL_WIDTH / 2, 22)
+        self.ui_manager.add(
+            ui.Label(
+                (settings.LOGICAL_WIDTH / 2, 3),
+                "- Settings -",
+                font=assets.fonts["silkscreen"],
+                bg=(0, 0, 0, 0),
+            )
+        ).add(
+            ui.Label(
+                (settings.LOGICAL_WIDTH / 2, 14),
+                "Music",
+                font=assets.fonts["silkscreen"],
+                bg=(0, 0, 0, 0),
+            )
+        ).add(
+            ui.HorizontalSlider(
+                slider_rect.copy(),
+                initial_value=int(common.music_volume * 100),
+                callback=lambda value: setattr(common, "music_volume", value / 100),
+            )
+        ).add(
+            ui.Label(
+                (settings.LOGICAL_WIDTH / 2, 29),
+                "SFX",
+                font=assets.fonts["silkscreen"],
+                bg=(0, 0, 0, 0),
+            )
+        ).add(
+            ui.HorizontalSlider(
+                slider_rect.move_to(center=(settings.LOGICAL_WIDTH / 2, 37)),
+                initial_value=int(common.sfx_volume * 100),
+                callback=lambda value: setattr(common, "sfx_volume", value / 100),
+            )
+        ).add(
+            ui.Button(
+                (settings.LOGICAL_WIDTH / 2, 47),
+                assets.images["play_button"],  # "Fullscreen toggle",
+                e="center",
+                callback=self.toggle_fullscreen,
+            )
+        ).add(
+            ui.Button(
+                (settings.LOGICAL_WIDTH / 2, 58),
+                assets.images["play_button"],  # "Back",
+                e="center",
+                callback=lambda: setattr(common, "current_state", MainMenu()),
+            )
+        )
+
+        # self.particle_manager = particles.ParticleManager(assets.images["particles"])
+
+    def update(self):
+        self.ui_manager.update()
+        # self.particle_manager.update()
+
+    def draw(self):
+        # for pos in [
+        #     (0, 0),
+        #     (settings.LOGICAL_WIDTH, 0),
+        #     (settings.LOGICAL_WIDTH, settings.LOGICAL_HEIGHT),
+        #     (0, settings.LOGICAL_HEIGHT),
+        # ]:
+        #     for _ in range(1):
+        #         self.particle_manager.spawn(
+        #             pos,
+        #             pygame.Vector2(1, 0).rotate(random.randint(0, 359)) * 80,
+        #         )
+        # self.particle_manager.render(static=True)
+
+        self.ui_manager.draw(common.screen)
+        for widget in self.ui_manager.widgets:
+            if isinstance(widget, ui.HorizontalSlider):
+                widget.draw(common.screen)
+
+    @staticmethod
+    def toggle_fullscreen():
+        if settings.FULLSCREEN:
+            pygame.display.set_mode((settings.LOGICAL_WIDTH, settings.LOGICAL_HEIGHT), flags=settings.DISPLAY_FLAGS)
+            settings.FULLSCREEN = False
+        else:
+            pygame.display.set_mode(
+                (settings.LOGICAL_WIDTH, settings.LOGICAL_HEIGHT),
+                flags=settings.DISPLAY_FLAGS | pygame.FULLSCREEN,
+            )
+            settings.FULLSCREEN = True

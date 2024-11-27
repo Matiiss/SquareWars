@@ -25,6 +25,9 @@ assets.load_assets()
 # common.current_state = states.Gameplay()
 common.current_state = states.MainMenu()
 
+prev_sfx_volume = common.sfx_volume
+prev_music_volume = common.music_volume
+
 running = True
 while running:
     dt = clock.tick(settings.FPS) / 1000
@@ -46,5 +49,13 @@ while running:
 
     common.current_state.update()
     common.current_state.draw()
+
+    if prev_sfx_volume != common.sfx_volume:
+        assets.set_sound_volume(common.sfx_volume)
+        prev_sfx_volume = common.sfx_volume
+
+    if prev_music_volume != common.music_volume:
+        pygame.mixer.music.set_volume(common.music_volume)
+        prev_music_volume = common.music_volume
 
     pygame.display.flip()
