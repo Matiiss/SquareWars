@@ -42,12 +42,16 @@ async def run():
 
         screen.fill("black")
         events = pygame.event.get()
-        common.events = events
-        for event in events:
+        common.events = list(events)
+        for event in common.events:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    print(common.current_state, settings.PYGBAG)
+                    if not settings.PYGBAG and isinstance(common.current_state, states.MainMenu):
+                        pygame.quit()
+                        raise SystemExit()
                     common.current_state = states.MainMenu()
             elif event.type == event_types.SWITCH_TO_GAMEPLAY:
                 common.current_state = states.Gameplay()
