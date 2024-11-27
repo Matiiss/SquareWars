@@ -168,3 +168,9 @@ cython_debug/
 *-pygbag.???
 /build
 /dist
+
+# custom build system
+# exported zip file
+SquareWars-*.zip
+# build folder
+*/SquareWarsBuild
