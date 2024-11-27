@@ -196,7 +196,6 @@ class Player(pygame.sprite.DirtySprite):
             while self.controller.command_queue.qsize():
                 next_command = self.controller.command_queue.get()
                 if next_command.command_name == command.COMMAND_SHOOT:
-                    print("pew pew")
                     if self.powerup:
                         do_shoot = True  # defer this action until later in case other actions happen this frame
                 else:

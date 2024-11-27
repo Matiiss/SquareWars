@@ -107,4 +107,3 @@ async def load_async():
     await asyncio.sleep(0)
     load_assets()
     await asyncio.sleep(2)
-    print("after sleep")

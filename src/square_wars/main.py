@@ -48,7 +48,6 @@ async def run():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    print(common.current_state, settings.PYGBAG)
                     if not settings.PYGBAG and isinstance(common.current_state, states.MainMenu):
                         pygame.quit()
                         raise SystemExit()
