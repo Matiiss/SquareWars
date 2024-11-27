@@ -168,6 +168,7 @@ cython_debug/
 *-pygbag.???
 /build
 /dist
+web.zip
 
 # custom build system
 # exported zip file
