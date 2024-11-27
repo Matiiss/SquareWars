@@ -1,6 +1,6 @@
 import pygame
 
-from . import settings, timer, assets, chunky, common, utils
+from . import settings, timer, assets, chunky, common, utils, easings
 
 
 class ScoreBoard(pygame.sprite.Sprite):
@@ -47,9 +47,9 @@ class ScoreBoard(pygame.sprite.Sprite):
         self.down_timer.update()
         self.live_timer.update()
         if not self.leaving:
-            self.rect.top = pygame.math.lerp(-64, 0, 1 - self.down_timer.decimal_percent_left)
+            self.rect.top = pygame.math.lerp(-64, 0, easings.out_quad(1 - self.down_timer.decimal_percent_left))
         else:
-            self.rect.top = pygame.math.lerp(0, 64, 1 - self.down_timer.decimal_percent_left)
+            self.rect.top = pygame.math.lerp(0, 64, easings.in_quad(1 - self.down_timer.decimal_percent_left))
         if self.text != self.last_text:
             self.renderer.rechunk(chunky.parse_chunky_text(self.text))
         self.renderer.update()
