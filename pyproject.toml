@@ -24,7 +24,7 @@ Homepage = "https://github.com/Matiiss/SquareWars"
 Issues = "https://github.com/Matiiss/SquareWars/issues"
 
 [project.optional-dependencies]
-dev = ["ruff", "pygbag", "pyinstaller"]
+dev = ["ruff", "pygbag", "pyinstaller", "pillow"]
 
 [project.gui-scripts]
 square-wars = "square_wars:run"

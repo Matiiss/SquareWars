@@ -11,6 +11,8 @@ pyi.run([
     "SquareWars",
     "--windowed",
     "-y",
+    "--icon",
+    str(pathlib.Path("src") / "res" / "images" / "icon.png"),
 ])
 
 export_direction = "SquareWarsBuild"
