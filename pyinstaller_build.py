@@ -5,15 +5,15 @@ import platform
 import pathlib
 
 # get ready for some super hax code
-pyi.run(
-    [
-        "run.py",
-        "-n",
-        "SquareWars",
-        "--windowed",
-        "-y",
-    ]
-)
+pyi.run([
+    "run.py",
+    "-n",
+    "SquareWars",
+    "--windowed",
+    "-y",
+    "--icon",
+    str(pathlib.Path("src") / "res" / "images" / "icon.png"),
+])
 
 export_direction = "SquareWarsBuild"
 
