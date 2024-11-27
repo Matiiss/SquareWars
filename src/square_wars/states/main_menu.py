@@ -297,7 +297,10 @@ class SettingsMenu:
                 callback=lambda value: [setattr(common, "sfx_volume", value / 100), assets.sfx["select"].play()],
                 do_initial_callback=False,
             )
-        ).add(
+        )
+
+        if not settings.PYGBAG:
+            self.ui_manager.add(
             ui.Button(
                 (settings.LOGICAL_WIDTH / 2, 47),
                 assets.images["fullscreen_button"],
@@ -307,6 +310,15 @@ class SettingsMenu:
         ).add(
             ui.Button(
                 (settings.LOGICAL_WIDTH / 2, 58),
+                assets.images["back_button"],
+                e="center",
+                callback=lambda: setattr(common, "current_state", MainMenu()),
+            )
+        )
+        else:
+            self.ui_manager.add(
+            ui.Button(
+                (settings.LOGICAL_WIDTH / 2, 47),
                 assets.images["back_button"],
                 e="center",
                 callback=lambda: setattr(common, "current_state", MainMenu()),
