@@ -1,10 +1,16 @@
 from pathlib import Path
 
 import pygame
+import asyncio
 
 from . import settings
 
-ASSETS_DIR = Path("res")
+if settings.PYGBAG:
+    ASSETS_DIR = Path("res")
+    AUDIO_EXTENSION = "ogg"
+else:
+    ASSETS_DIR = Path("src/res")
+    AUDIO_EXTENSION = "wav"
 
 images: dict[str, pygame.Surface] = {}
 sfx: dict[str, pygame.mixer.Sound] = {}
@@ -15,7 +21,7 @@ def image_path(path, extension="png"):
     return ASSETS_DIR / "images" / f"{path}.{extension}"
 
 
-def ost_path(path, extension="wav"):
+def ost_path(path, extension=AUDIO_EXTENSION):
     return ASSETS_DIR / "ost" / f"{path}.{extension}"
 
 
@@ -27,7 +33,7 @@ def load_image(path):
     return load_image_raw(path).convert_alpha()
 
 
-def load_sound(path, extension="wav"):
+def load_sound(path, extension=AUDIO_EXTENSION):
     return pygame.mixer.Sound(ASSETS_DIR / "sfx" / f"{path}.{extension}")
 
 
@@ -69,6 +75,7 @@ def load_assets():
             "guiWoodBG": load_image("guiWoodBG"),
             "clouds": load_image("clouds"),
             "fov": load_image("fov"),
+            "countdown": load_image("countdown"),
         }
     )
     sfx.update(
@@ -85,3 +92,19 @@ def load_assets():
         }
     )
     fonts.update({"silkscreen": load_font("silkfont"), "silkscreen-bold": load_font("silkfont-bold")})
+
+
+async def load_async():
+    flags = 0
+    if not settings.PYGBAG:
+        flags = pygame.NOFRAME | pygame.SCALED
+    screen = pygame.display.set_mode((64, 64), flags)
+    screen.fill("white")
+    logo = load_image("logo")
+    logo_rect = logo.get_rect()
+    logo_rect.center = (32, 32)
+    screen.blit(logo, logo_rect)
+    pygame.display.update()
+    await asyncio.sleep(0)
+    load_assets()
+    await asyncio.sleep(2)

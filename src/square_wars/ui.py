@@ -1,7 +1,7 @@
 from typing import Protocol, runtime_checkable
 
 import pygame
-
+import math
 from . import common, assets
 
 
@@ -13,6 +13,7 @@ class UIManager:
         self.without_selector = without_selector
         self.selector_arrow = SelectorArrow()
         self._draw_excludes_once = set()
+        self.time = 0
 
     def add(self, widget, initial_selected=False, selector: str | None = None):
         if isinstance(widget, Button):
@@ -105,6 +106,8 @@ class UIManager:
         if self.selector_arrow.last_selection is not None:
             self.selector_arrow.last_selection.is_hovered = True
 
+        self.time += common.dt
+
     def draw(self, dst: pygame.Surface) -> None:
         for widget in self.widgets:
             if widget in self._draw_excludes_once:
@@ -119,7 +122,9 @@ class UIManager:
             dst.blit(widget.image, widget.rect)
 
         if self.selector_arrow.shown:
-            dst.blit(self.selector_arrow.image, self.selector_arrow.rect)
+            arrow_rect = self.selector_arrow.rect.copy()
+            arrow_rect.x += math.sin(self.time * 3) * 2
+            dst.blit(self.selector_arrow.image, arrow_rect)
 
 
 @runtime_checkable
@@ -149,6 +154,22 @@ class Image:
     def __init__(self, position, image: pygame.Surface) -> None:
         self.image = image.copy()
         self.rect = image.get_rect(topleft=position)
+
+
+class DayNightBG:
+    def __init__(self):
+        self.position = pygame.Vector2()
+        self.rect = pygame.Rect(0, 0, 64, 64)
+        self.image = pygame.Surface((64, 64)).convert()
+        self.bg_image = assets.images["menu_bg"]
+        self.time = 0
+
+    def update(self):
+        self.time += common.dt
+        # add two 90 degree out-of-phase triangle waves to make a trapezoid
+        x = self.time / 5  # five seconds/day (and /night, /dawn, /dusk)
+        self.lerp_value = pygame.math.clamp((abs((x % 4) - 2) - 1) + (abs(((x - 1) % 4) - 2)) / 2, 0, 1)
+        self.image.fill
 
 
 class Label(Widget):
@@ -231,7 +252,7 @@ class Button:
         position = self.position.copy()
 
         if self.is_hovered and not self.without_thingy:
-            position.x += 2
+            position.x += 1
             # rect.width += 1
 
         setattr(rect, self.e, position)
@@ -243,7 +264,7 @@ class Button:
         position = self.position.copy()
 
         if self.is_hovered and not self.without_thingy:
-            rect.width += 2
+            rect.width += 1
 
         setattr(rect, self.e, position)
         return rect
