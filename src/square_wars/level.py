@@ -23,7 +23,7 @@ class Level:
     world: str
     fov: bool = False
 
-    
+
 TUTORIAL = Level(
     remark="Move:\n WASD\nPause:\n e",
     powerups=(POWERUP_SPEEDUP,),
@@ -85,7 +85,7 @@ TUTORIAL_BARBWIRE = Level(
 ........
 #.#.#.#.
 .......1
-"""
+""",
 )
 
 TWO_OPPONENT = Level(
@@ -167,7 +167,7 @@ DOUBLE_TROUBLE = Level(
 .#%%%%%.
 .#...##.
 ........
-"""
+""",
 )
 
 TIME_TRIALS = Level(
@@ -216,7 +216,7 @@ PUZZLE = Level(
 ..#...#.
 #.......
 ..##2##.
-"""
+""",
 )
 
 NIGHT_CRAWLING = Level(

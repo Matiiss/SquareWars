@@ -3,11 +3,11 @@ from typing import Any
 import pygame
 import random
 import math
+import pygame._sdl2 as pg_sdl2  # noqa
 
-from .. import common, assets, ui, utils, easings, timer
+from .. import common, assets, ui, utils, easings, timer, settings
 
-from .transition import Transition
-from .gameplay import Gameplay
+from . import transition, gameplay
 
 
 class Cloud(pygame.sprite.Sprite):
@@ -93,13 +93,18 @@ class MainMenu:
                 position=(16, 20),
                 image=assets.images["play_button"],
                 callback=lambda: setattr(
-                    common, "current_state", Transition(current_state=self, next_state=Gameplay())
+                    common, "current_state", transition.Transition(current_state=self, next_state=gameplay.Gameplay())
                 ),
             ),
             initial_selected=True,
             selector="play_button",
         ).add(
-            ui.Button(position=(16, 32), image=assets.images["settings_button"]), selector="settings_button"
+            ui.Button(
+                position=(16, 32),
+                image=assets.images["settings_button"],
+                callback=lambda: setattr(common, "current_state", SettingsMenu()),
+            ),
+            selector="settings_button",
         ).add_static(ui.Image(position=(8, 3), image=assets.images["menu_title"]), selector="menu_title")
 
         self.bg_image = assets.images["menu_bg"].copy()
@@ -202,44 +207,163 @@ class MainMenu:
         #         + 0.00776 * x**0
         #     )
 
+        # RIP, Jiffy no like the actual transition (and I must agree :sob:)
+        # def ease(x):
+        #     return (
+        #         -489051275.67954 * x**25
+        #         + 3370247136.69583 * x**24
+        #         - 9087988458.11210 * x**23
+        #         + 10568251835.33066 * x**22
+        #         - 779117597.43718 * x**21
+        #         - 9298948490.07450 * x**20
+        #         + 3105708851.85429 * x**19
+        #         + 8759065407.20914 * x**18
+        #         - 4000187023.25428 * x**17
+        #         - 8703846651.73520 * x**16
+        #         + 5562523752.04632 * x**15
+        #         + 8014163229.22339 * x**14
+        #         - 9278031238.17117 * x**13
+        #         - 3356176679.08941 * x**12
+        #         + 13484070599.21112 * x**11
+        #         - 13133199227.21771 * x**10
+        #         + 7474819587.38848 * x**9
+        #         - 2837586721.03713 * x**8
+        #         + 745544227.51096 * x**7
+        #         - 135737438.22430 * x**6
+        #         + 16753941.64108 * x**5
+        #         - 1340627.94398 * x**4
+        #         + 64480.39264 * x**3
+        #         - 1636.02374 * x**2
+        #         + 16.50986 * x**1
+        #         - 0.01325 * x**0
+        #     )
+
         def ease(x):
-            return (
-                -489051275.67954 * x**25
-                + 3370247136.69583 * x**24
-                - 9087988458.11210 * x**23
-                + 10568251835.33066 * x**22
-                - 779117597.43718 * x**21
-                - 9298948490.07450 * x**20
-                + 3105708851.85429 * x**19
-                + 8759065407.20914 * x**18
-                - 4000187023.25428 * x**17
-                - 8703846651.73520 * x**16
-                + 5562523752.04632 * x**15
-                + 8014163229.22339 * x**14
-                - 9278031238.17117 * x**13
-                - 3356176679.08941 * x**12
-                + 13484070599.21112 * x**11
-                - 13133199227.21771 * x**10
-                + 7474819587.38848 * x**9
-                - 2837586721.03713 * x**8
-                + 745544227.51096 * x**7
-                - 135737438.22430 * x**6
-                + 16753941.64108 * x**5
-                - 1340627.94398 * x**4
-                + 64480.39264 * x**3
-                - 1636.02374 * x**2
-                + 16.50986 * x**1
-                - 0.01325 * x**0
-            )
+            return -1.40837 * x**5 + 3.91918 * x**4 - 3.66444 * x**3 + 2.89393 * x**2 - 0.80336 * x**1 - 0.01371 * x**0
 
         dist = 50
         time_s = 1
 
         p_button = self.ui_manager["play_button"]
         self.transition_easers[p_button] = easings.EasyVec(
-            ease, p_button.position, pygame.Vector2(p_button.position.x, p_button.position.y - dist), time_s
+            ease, p_button.position, pygame.Vector2(p_button.position.x - dist, p_button.position.y), time_s
         )
         s_button = self.ui_manager["settings_button"]
         self.transition_easers[s_button] = easings.EasyVec(
-            ease, s_button.position, pygame.Vector2(s_button.position.x, s_button.position.y + dist), time_s
+            ease, s_button.position, pygame.Vector2(s_button.position.x + dist, s_button.position.y), time_s
         )
+
+
+class SettingsMenu:
+    caption_string = "Settings"
+
+    def __init__(self):
+        super().__init__()
+        self.ui_manager = ui.UIManager(without_selector=True)
+
+        slider_rect = pygame.Rect(0, 0, 50, 6)
+        slider_rect.center = (settings.LOGICAL_WIDTH / 2, 22)
+        self.ui_manager.add(
+            ui.Label(
+                (settings.LOGICAL_WIDTH / 2, 3),
+                "- Settings -",
+                font=assets.fonts["silkscreen"],
+                bg=(0, 0, 0, 0),
+            )
+        ).add(
+            ui.Label(
+                (settings.LOGICAL_WIDTH / 2, 14),
+                "Music",
+                font=assets.fonts["silkscreen"],
+                bg=(0, 0, 0, 0),
+            )
+        ).add(
+            ui.HorizontalSlider(
+                slider_rect.copy(),
+                initial_value=int(common.music_volume * 100),
+                callback=lambda value: setattr(common, "music_volume", value / 100),
+            )
+        ).add(
+            ui.Label(
+                (settings.LOGICAL_WIDTH / 2, 29),
+                "SFX",
+                font=assets.fonts["silkscreen"],
+                bg=(0, 0, 0, 0),
+            )
+        ).add(
+            ui.HorizontalSlider(
+                slider_rect.move_to(center=(settings.LOGICAL_WIDTH / 2, 37)),
+                initial_value=int(common.sfx_volume * 100),
+                callback=lambda value: [setattr(common, "sfx_volume", value / 100), assets.sfx["select"].play()],
+                do_initial_callback=False,
+            )
+        ).add(
+            ui.Button(
+                (settings.LOGICAL_WIDTH / 2, 47),
+                assets.images["fullscreen_button"],
+                e="center",
+                callback=self.toggle_fullscreen,
+            )
+        ).add(
+            ui.Button(
+                (settings.LOGICAL_WIDTH / 2, 58),
+                assets.images["back_button"],
+                e="center",
+                callback=lambda: setattr(common, "current_state", MainMenu()),
+            )
+        )
+
+        # self.particle_manager = particles.ParticleManager(assets.images["particles"])
+
+    def update(self):
+        self.ui_manager.update()
+        # self.particle_manager.update()
+
+    def draw(self):
+        # for pos in [
+        #     (0, 0),
+        #     (settings.LOGICAL_WIDTH, 0),
+        #     (settings.LOGICAL_WIDTH, settings.LOGICAL_HEIGHT),
+        #     (0, settings.LOGICAL_HEIGHT),
+        # ]:
+        #     for _ in range(1):
+        #         self.particle_manager.spawn(
+        #             pos,
+        #             pygame.Vector2(1, 0).rotate(random.randint(0, 359)) * 80,
+        #         )
+        # self.particle_manager.render(static=True)
+
+        common.screen.fill(pygame.color.Color("#0098dc"))
+        common.screen.blit(assets.images["menu_bg"], (0, 0))
+
+        self.ui_manager.draw(common.screen)
+        for widget in self.ui_manager.widgets:
+            if isinstance(widget, ui.HorizontalSlider):
+                widget.draw(common.screen)
+
+    @staticmethod
+    def toggle_fullscreen():
+        if settings.PYGBAG:
+            return
+        common.window.destroy()
+        if settings.FULLSCREEN:
+            common.screen = pygame.display.set_mode(
+                (settings.LOGICAL_WIDTH, settings.LOGICAL_HEIGHT), flags=settings.DISPLAY_FLAGS | pygame.HIDDEN
+            )
+            settings.FULLSCREEN = False
+        else:
+            common.screen = pygame.display.set_mode(
+                (settings.LOGICAL_WIDTH, settings.LOGICAL_HEIGHT),
+                flags=settings.DISPLAY_FLAGS | pygame.FULLSCREEN | pygame.HIDDEN,
+            )
+            settings.FULLSCREEN = True
+
+        window = pygame.Window.from_display_module()
+        window.show()
+        common.window = window
+
+        if any(settings.DISPLAY_FLAGS & flag for flag in [pygame.SCALED, pygame.OPENGL, pygame.DOUBLEBUF]):
+            renderer = pg_sdl2.Renderer.from_window(common.window)
+        else:
+            renderer = pg_sdl2.Renderer(common.window)
+        renderer.draw_color = "#391f21"
