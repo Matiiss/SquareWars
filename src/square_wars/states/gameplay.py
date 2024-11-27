@@ -838,7 +838,7 @@ class Gameplay:
 
         # more hax
         screen = common.screen
-        common.screen = pygame.Surface(common.screen.size)
+        common.screen = pygame.Surface(common.screen.get_size())
         self.draw()
         self.____transition_image_original = self.____transition_image = common.screen
         self.____transition_image_alpha = 0
@@ -864,4 +864,4 @@ class Gameplay:
             common.current_state = self
 
     def transition_draw(self, dst: pygame.Surface) -> None:
-        dst.blit(self.____transition_image, self.____transition_image.get_rect(center=pygame.Vector2(dst.size) / 2))
+        dst.blit(self.____transition_image, self.____transition_image.get_rect(center=pygame.Vector2(dst.get_size()) / 2))

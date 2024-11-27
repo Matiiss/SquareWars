@@ -1,4 +1,7 @@
 import pygame
+import sys
+
+PYGBAG = sys.platform == "emscripten"
 
 TITLE = "Square Wars"
 
@@ -6,7 +9,7 @@ LOGICAL_WIDTH = 64
 LOGICAL_HEIGHT = 64
 LOGICAL_SIZE = (LOGICAL_WIDTH, LOGICAL_HEIGHT)
 
-DISPLAY_FLAGS = pygame.SCALED | pygame.RESIZABLE
+DISPLAY_FLAGS = (pygame.SCALED | pygame.RESIZABLE) * (not PYGBAG)
 FULLSCREEN = False
 
 TEAM_NONE = -1
